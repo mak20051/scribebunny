@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { JsonLd } from "@/components/json-ld";
+import { breadcrumbSchema, pageMetadata } from "@/lib/seo";
 import {
   FinalCta,
   MarketingHero,
@@ -6,6 +8,7 @@ import {
   PageDivider,
 } from "@/components/marketing";
 import { SiteShell } from "@/components/site-shell";
+import { PortfolioGallery } from "@/components/portfolio-gallery";
 import { VideoCard } from "@/components/video-card";
 import { fullPortfolio } from "@/lib/portfolio";
 
@@ -56,17 +59,16 @@ const caseStudies = [
     "More scalable product education",
     "More dependable fulfillment for agencies",
   ];
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Explainer Video Work and Case Studies | Scribebunny",
   description:
     "See how Scribebunny creates explainer, demo, onboarding, and agency-partner video work designed to improve clarity, launches, sales support, and product education.",
-  alternates: {
-    canonical: "https://scribebunny.com/work",
-  },
-};
+  path: "/work",
+});
 export default function WorkPage() {
   return (
     <SiteShell>
+      <JsonLd data={breadcrumbSchema("Our Work", "/work")} />
       <main className="relative overflow-x-hidden bg-[linear-gradient(135deg,#FFF5F5_0%,#FFFFFF_50%,#FFF9F0_100%)] text-slate-800">
         <MarketingHero
           label="Our work"
@@ -80,10 +82,8 @@ export default function WorkPage() {
         <MarketingSection
           label="Intro"
           title="More than a gallery"
-          description="This page is designed to show not just what the work looks like, but what it is meant to achieve. Every project should help a client explain something more clearly, support a launch, strengthen sales communication, or improve onboarding."
-        >
-          <div />
-        </MarketingSection>
+          description="Each project here was built to help a client explain something more clearly, support a launch, strengthen sales communication, or improve onboarding."
+        />
         <PageDivider />
         <MarketingSection label="Case studies" title="Featured projects">
           <div className="grid gap-10 lg:grid-cols-3">
@@ -98,10 +98,7 @@ export default function WorkPage() {
                   }}
                 />
                 <article className="testimonial-card text-left">
-                  <h3 className="text-2xl font-bold text-gray-800">
-                    {caseStudy.title}
-                  </h3>
-                  <div className="mt-4 space-y-3 text-gray-600">
+                  <div className="space-y-3 text-gray-600">
                     <p>
                       <strong>Client type:</strong> {caseStudy.clientType}
                     </p>
@@ -128,30 +125,9 @@ export default function WorkPage() {
         <MarketingSection
           label="Portfolio"
           title="Video gallery"
-          description="Portfolio is now organized around the main website categories: SaaS Explainers, Product Demos & Onboarding, White-Label / Agency Work, Whiteboard, and Launch / Promo."
+          description="Browse samples by category, from SaaS explainers to white-label agency work."
         >
-          <div className="mb-8 flex flex-wrap justify-center gap-3">
-            {[
-              "SaaS Explainers",
-              "Product Demos & Onboarding",
-              "White-Label / Agency Work",
-              "Whiteboard",
-              "Launch / Promo",
-            ].map((item) => (
-              <span key={item} className="filter-btn active">
-                {item}
-              </span>
-            ))}
-          </div>
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {fullPortfolio.map((video, index) => (
-              <VideoCard
-                key={`${video.id}-${index}`}
-                video={video}
-                priority={index < 3}
-              />
-            ))}
-          </div>
+          <PortfolioGallery videos={fullPortfolio} />
         </MarketingSection>
         <PageDivider />
         <MarketingSection
@@ -166,14 +142,6 @@ export default function WorkPage() {
               </div>
             ))}
           </div>
-        </MarketingSection>
-        <PageDivider />
-        <MarketingSection
-          label="Proof"
-          title="How we think about proof"
-          description="Strong proof comes from showing the right combination of challenge, solution, delivery context, and outcome. As more projects are added, each case study should show the client type, business use case, scope, and measurable or directional result where possible."
-        >
-          <div />
         </MarketingSection>
         <FinalCta
           title="Want to create a video that supports a real business goal?"

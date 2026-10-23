@@ -1,55 +1,43 @@
 import type { Metadata } from "next";
+import { JsonLd } from "@/components/json-ld";
+import type { Faq } from "@/components/marketing";
+import { breadcrumbSchema, faqSchema, pageMetadata } from "@/lib/seo";
 import { AgencyInquiryForm } from "@/components/agency-inquiry-form";
 import { ServicePageTemplate } from "@/components/service-page-template";
 import { fullPortfolio } from "@/lib/portfolio";
 
-const faqSchema = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: [
-    {
-      "@type": "Question",
-      name: "What does white-label video production mean?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "White-label video production means Scribebunny creates video assets behind the scenes so your agency can offer and deliver the work under your own brand.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Can you support recurring client work?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Yes. We can support recurring production needs, project-based work, or ongoing monthly partnership models depending on volume and fit.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Why not just use freelancers?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Freelancers can help in some cases, but agencies often need more consistency, clearer workflow, and a more dependable delivery model than ad hoc freelance support provides.",
-      },
-    },
-  ],
-};
-export const metadata: Metadata = {
-  title:
-    "White-Label Explainer Video Agency Partner for Agencies | Scribebunny",
+const faqs: Faq[] = [
+  {
+    question: "What does white-label video production mean?",
+    answer:
+      "White-label video production means Scribebunny creates video assets behind the scenes so your agency can offer and deliver the work under your own brand.",
+  },
+  {
+    question: "Can you support recurring client work?",
+    answer:
+      "Yes. We can support recurring production needs, project-based work, or ongoing monthly partnership models depending on volume and fit.",
+  },
+  {
+    question: "Why not just use freelancers?",
+    answer:
+      "Freelancers can help in some cases, but agencies often need more consistency, clearer workflow, and a more dependable delivery model than ad hoc freelance support provides.",
+  },
+];
+export const metadata: Metadata = pageMetadata({
+  title: "White-Label Explainer Video Production | Scribebunny",
   description:
     "Partner with Scribebunny for white-label explainer, demo, and animation production. Reliable video fulfillment for agencies without adding in-house overhead.",
-  alternates: {
-    canonical: "https://scribebunny.com/white-label-video-production",
-  },
-};
+  path: "/white-label-video-production",
+});
 export default function WhiteLabelVideoProductionPage() {
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(faqSchema),
-        }}
+      <JsonLd data={faqSchema(faqs)} />
+      <JsonLd
+        data={breadcrumbSchema(
+          "White-Label Video Production",
+          "/white-label-video-production",
+        )}
       />
       <ServicePageTemplate
         heroLabel="Built for agencies that need a trusted production partner"
@@ -126,23 +114,7 @@ export default function WhiteLabelVideoProductionPage() {
         ]}
         pricingTitle="Engagement model"
         pricingBody="White-label agency partnerships are typically scoped as custom engagements or monthly support plans, with starting points from $5,000 depending on volume, delivery model, and service mix."
-        faqs={[
-          {
-            question: "What does white-label video production mean?",
-            answer:
-              "White-label video production means Scribebunny creates video assets behind the scenes so your agency can offer and deliver the work under your own brand.",
-          },
-          {
-            question: "Can you support recurring client work?",
-            answer:
-              "Yes. We can support recurring production needs, project-based work, or ongoing monthly partnership models depending on volume and fit.",
-          },
-          {
-            question: "Why not just use freelancers?",
-            answer:
-              "Freelancers can help in some cases, but agencies often need more consistency, clearer workflow, and a more dependable delivery model than ad hoc freelance support provides.",
-          },
-        ]}
+        faqs={faqs}
         portfolioTitle="White-label and agency examples"
         portfolioDescription="Relevant portfolio samples mapped to White-Label / Agency Work for this service page."
         portfolioVideos={fullPortfolio

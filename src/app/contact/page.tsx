@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { JsonLd } from "@/components/json-ld";
+import { breadcrumbSchema, faqSchema, pageMetadata } from "@/lib/seo";
 import { ContactForm } from "@/components/contact-form";
 import {
   BulletGrid,
@@ -42,18 +44,17 @@ const callExpectations = [
         "If the project looks like a fit, the next step is usually a clearer scope, proposal, or recommended package based on your needs.",
     },
   ];
-export const metadata: Metadata = {
-  title:
-    "Book a Strategy Call for Explainer or Demo Video Projects | Scribebunny",
+export const metadata: Metadata = pageMetadata({
+  title: "Request a Video Quote or Strategy Call | Scribebunny",
   description:
     "Contact Scribebunny to discuss explainer videos, product demos, onboarding content, or white-label video production. Book a strategy call or request a quote.",
-  alternates: {
-    canonical: "https://scribebunny.com/contact",
-  },
-};
+  path: "/contact",
+});
 export default function ContactPage() {
   return (
     <SiteShell>
+      <JsonLd data={faqSchema(faqs)} />
+      <JsonLd data={breadcrumbSchema("Contact", "/contact")} />
       <main className="relative overflow-x-hidden bg-[linear-gradient(135deg,#FFF5F5_0%,#FFFFFF_50%,#FFF9F0_100%)] text-slate-800">
         <MarketingHero
           label="A simple starting point for qualified video inquiries"
@@ -65,12 +66,10 @@ export default function ContactPage() {
         />
         <PageDivider />
         <MarketingSection
-          label="Credibility"
+          label="Getting started"
           title="A simple starting point for qualified video inquiries"
           description="Whether you need a SaaS explainer, a product walkthrough, onboarding content, or a white-label production partner, this call is designed to help you clarify scope, fit, and next steps."
-        >
-          <div />
-        </MarketingSection>
+        />
         <PageDivider />
         <MarketingSection
           label="What to expect"

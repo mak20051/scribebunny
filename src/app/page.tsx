@@ -4,8 +4,17 @@ import { PricingSection } from "@/components/pricing-section";
 import { QuotePopupButton } from "@/components/quote-popup";
 import { SiteShell } from "@/components/site-shell";
 import { VideoCard } from "@/components/video-card";
+import { JsonLd } from "@/components/json-ld";
+import { SimpleFaq, type Faq } from "@/components/marketing";
+import { pricingFaqs } from "@/lib/packages";
 import { featuredPortfolio } from "@/lib/portfolio";
-import { ADDRESS, EMAIL, PARENT_COMPANY, PHONE_DISPLAY } from "@/lib/site";
+import { services } from "@/lib/services";
+import {
+  faqSchema,
+  organizationSchema,
+  videoPackagesSchema,
+  websiteSchema,
+} from "@/lib/seo";
 
 const audiences = [
     {
@@ -25,29 +34,6 @@ const audiences = [
       description:
         "White-label production support for agencies that need reliable video delivery without building an in-house team.",
       emoji: "🤝",
-    },
-  ],
-  services = [
-    {
-      emoji: "🎯",
-      title: "SaaS Explainer Videos",
-      description:
-        "Clear, conversion-focused explainer videos for homepages, launches, product overviews, and sales conversations.",
-      href: "/saas-explainer-videos",
-    },
-    {
-      emoji: "📱",
-      title: "Product Demo and Onboarding Videos",
-      description:
-        "Walkthroughs, feature explainers, onboarding assets, and user education videos that help customers understand your product faster.",
-      href: "/product-demo-onboarding-videos",
-    },
-    {
-      emoji: "✏️",
-      title: "White-Label Video Production",
-      description:
-        "Reliable behind-the-scenes video fulfillment for agencies that want quality delivery without building in-house production capacity.",
-      href: "/white-label-video-production",
     },
   ],
   outcomes = [
@@ -181,7 +167,8 @@ const audiences = [
       answer:
         "Yes. We can support one-off projects as well as recurring production needs for growing teams and agency partners.",
     },
-  ];
+    ...pricingFaqs,
+  ] satisfies Faq[];
 function Doodles() {
   return (
     <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
@@ -235,53 +222,12 @@ function SectionDivider() {
   return <div className="section-divider" />;
 }
 export default function HomePage() {
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: faqs.map((faq) => ({
-      "@type": "Question",
-      name: faq.question,
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: faq.answer,
-      },
-    })),
-  };
   return (
     <SiteShell>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "Organization",
-            name: "Scribebunny",
-            url: "https://scribebunny.com",
-            description:
-              "Scribebunny helps SaaS brands, startups, and agencies simplify complex products with explainer, demo, onboarding, and white-label video production.",
-            email: EMAIL,
-            telephone: PHONE_DISPLAY,
-            address: {
-              "@type": "PostalAddress",
-              streetAddress: ADDRESS.street,
-              addressLocality: ADDRESS.city,
-              addressRegion: ADDRESS.region,
-              postalCode: ADDRESS.postalCode,
-              addressCountry: "US",
-            },
-            parentOrganization: {
-              "@type": "Organization",
-              name: PARENT_COMPANY,
-            },
-          }),
-        }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(faqSchema),
-        }}
-      />
+      <JsonLd data={organizationSchema()} />
+      <JsonLd data={websiteSchema()} />
+      <JsonLd data={videoPackagesSchema()} />
+      <JsonLd data={faqSchema(faqs)} />
       <main className="relative overflow-x-hidden bg-[linear-gradient(135deg,#FFF5F5_0%,#FFFFFF_50%,#FFF9F0_100%)] text-slate-800">
         <Doodles />
         <section className="relative z-10 flex min-h-screen items-center justify-center overflow-hidden px-6 pt-32 pb-20 sm:px-8 lg:px-12">
@@ -600,6 +546,21 @@ export default function HomePage() {
                 </article>
               ))}
             </div>
+          </div>
+        </section>
+        <SectionDivider />
+        <section id="faq" className="relative z-10 py-20">
+          <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
+            <div className="mb-16 text-center">
+              <span className="mb-4 inline-block rotate-[-1deg] rounded-full border-2 border-gray-800 bg-[#4ECDC4] px-4 py-2 text-sm font-bold">
+                FAQS
+              </span>
+              <h2 className="font-display text-5xl font-bold text-gray-800">
+                {"Frequently Asked "}
+                <span className="text-[#FF3333]">Questions</span>
+              </h2>
+            </div>
+            <SimpleFaq items={faqs} />
           </div>
         </section>
         <SectionDivider />

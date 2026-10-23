@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { MobileNav } from "@/components/mobile-nav";
 import {
   ADDRESS,
   CALENDLY_URL,
@@ -60,6 +61,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
               Book a Strategy Call
             </a>
           </nav>
+          <MobileNav items={navItems} />
         </div>
       </header>
 
@@ -166,7 +168,11 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
                     Agency Partner Inquiries
                   </Link>
                 </li>
-                <li>{EMAIL}</li>
+                <li>
+                  <a href={`mailto:${EMAIL}`} className="hover:text-[#FF3333]">
+                    {EMAIL}
+                  </a>
+                </li>
                 <li>
                   <a href={PHONE_HREF} className="hover:text-[#FF3333]">
                     Hotline: {PHONE_DISPLAY}

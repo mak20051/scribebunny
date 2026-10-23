@@ -1,54 +1,42 @@
 import type { Metadata } from "next";
+import { JsonLd } from "@/components/json-ld";
+import type { Faq } from "@/components/marketing";
+import { breadcrumbSchema, faqSchema, pageMetadata } from "@/lib/seo";
 import { ServicePageTemplate } from "@/components/service-page-template";
 import { fullPortfolio } from "@/lib/portfolio";
 
-const faqSchema = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: [
-    {
-      "@type": "Question",
-      name: "What is a SaaS explainer video?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "A SaaS explainer video is a short video designed to help potential buyers understand a software product, what problem it solves, and why it matters.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Where can we use a SaaS explainer video?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "You can use it on your homepage, landing pages, launch campaigns, sales decks, email flows, and outbound communication.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Can one video support multiple teams?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Yes. A strong product narrative can support marketing, sales, partnerships, onboarding, and launch communication.",
-      },
-    },
-  ],
-};
-export const metadata: Metadata = {
-  title:
-    "SaaS Explainer Videos for Product Marketing and Launches | Scribebunny",
+const faqs: Faq[] = [
+  {
+    question: "What is a SaaS explainer video?",
+    answer:
+      "A SaaS explainer video is a short video designed to help potential buyers understand a software product, what problem it solves, and why it matters.",
+  },
+  {
+    question: "Where can we use a SaaS explainer video?",
+    answer:
+      "You can use it on your homepage, landing pages, launch campaigns, sales decks, email flows, and outbound communication.",
+  },
+  {
+    question: "Can one video support multiple teams?",
+    answer:
+      "Yes. A strong product narrative can support marketing, sales, partnerships, onboarding, and launch communication.",
+  },
+];
+export const metadata: Metadata = pageMetadata({
+  title: "SaaS Explainer Videos for Launches and Sales | Scribebunny",
   description:
     "Scribebunny creates SaaS explainer videos that help teams simplify product messaging, improve understanding, and support launches, sales, and conversion.",
-  alternates: {
-    canonical: "https://scribebunny.com/saas-explainer-videos",
-  },
-};
+  path: "/saas-explainer-videos",
+});
 export default function SaasExplainerVideosPage() {
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(faqSchema),
-        }}
+      <JsonLd data={faqSchema(faqs)} />
+      <JsonLd
+        data={breadcrumbSchema(
+          "SaaS Explainer Videos",
+          "/saas-explainer-videos",
+        )}
       />
       <ServicePageTemplate
         heroLabel="Built for SaaS teams that need a clearer product story"
@@ -121,23 +109,7 @@ export default function SaasExplainerVideosPage() {
         ]}
         pricingTitle="Starting point"
         pricingBody="SaaS explainer video packages typically start from $3,500 depending on scope, length, style, and production requirements."
-        faqs={[
-          {
-            question: "What is a SaaS explainer video?",
-            answer:
-              "A SaaS explainer video is a short video designed to help potential buyers understand a software product, what problem it solves, and why it matters.",
-          },
-          {
-            question: "Where can we use a SaaS explainer video?",
-            answer:
-              "You can use it on your homepage, landing pages, launch campaigns, sales decks, email flows, and outbound communication.",
-          },
-          {
-            question: "Can one video support multiple teams?",
-            answer:
-              "Yes. A strong product narrative can support marketing, sales, partnerships, onboarding, and launch communication.",
-          },
-        ]}
+        faqs={faqs}
         portfolioTitle="SaaS explainer video examples"
         portfolioDescription="A shortlist of portfolio videos mapped to the SaaS Explainers category for this page."
         portfolioVideos={fullPortfolio

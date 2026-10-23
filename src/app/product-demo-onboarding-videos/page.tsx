@@ -1,53 +1,43 @@
 import type { Metadata } from "next";
+import { JsonLd } from "@/components/json-ld";
+import type { Faq } from "@/components/marketing";
+import { breadcrumbSchema, faqSchema, pageMetadata } from "@/lib/seo";
 import { ServicePageTemplate } from "@/components/service-page-template";
 import { fullPortfolio } from "@/lib/portfolio";
 
-const faqSchema = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: [
-    {
-      "@type": "Question",
-      name: "What is the difference between an explainer video and a demo video?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "An explainer video focuses on product value and high-level understanding, while a demo video shows how the product works, often through features, workflows, or onboarding steps.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Can demo videos help reduce onboarding friction?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Yes. Clear walkthroughs help users understand next steps faster and reduce confusion during activation and adoption.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Can these videos support sales as well as customer success?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Yes. Product demo videos can help both prospects and customers understand workflows, features, and outcomes more efficiently.",
-      },
-    },
-  ],
-};
-export const metadata: Metadata = {
-  title: "Product Demo and Onboarding Videos for SaaS Teams | Scribebunny",
+const faqs: Faq[] = [
+  {
+    question:
+      "What is the difference between an explainer video and a demo video?",
+    answer:
+      "An explainer video focuses on product value and high-level understanding, while a demo video shows how the product works, often through features, workflows, or onboarding steps.",
+  },
+  {
+    question: "Can demo videos help reduce onboarding friction?",
+    answer:
+      "Yes. Clear walkthroughs help users understand next steps faster and reduce confusion during activation and adoption.",
+  },
+  {
+    question: "Can these videos support sales as well as customer success?",
+    answer:
+      "Yes. Product demo videos can help both prospects and customers understand workflows, features, and outcomes more efficiently.",
+  },
+];
+export const metadata: Metadata = pageMetadata({
+  title: "Product Demo and Onboarding Videos for SaaS | Scribebunny",
   description:
     "Create product demo, onboarding, and feature explainer videos that help users understand your software faster and support activation, training, and sales.",
-  alternates: {
-    canonical: "https://scribebunny.com/product-demo-onboarding-videos",
-  },
-};
+  path: "/product-demo-onboarding-videos",
+});
 export default function ProductDemoOnboardingVideosPage() {
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(faqSchema),
-        }}
+      <JsonLd data={faqSchema(faqs)} />
+      <JsonLd
+        data={breadcrumbSchema(
+          "Product Demo and Onboarding Videos",
+          "/product-demo-onboarding-videos",
+        )}
       />
       <ServicePageTemplate
         heroLabel="Built for teams responsible for product understanding"
@@ -122,25 +112,7 @@ export default function ProductDemoOnboardingVideosPage() {
         ]}
         pricingTitle="Starting point"
         pricingBody="Product demo and onboarding video packages typically start from $2,500 depending on complexity, number of workflows, and format requirements."
-        faqs={[
-          {
-            question:
-              "What is the difference between an explainer video and a demo video?",
-            answer:
-              "An explainer video focuses on product value and high-level understanding, while a demo video shows how the product works, often through features, workflows, or onboarding steps.",
-          },
-          {
-            question: "Can demo videos help reduce onboarding friction?",
-            answer:
-              "Yes. Clear walkthroughs help users understand next steps faster and reduce confusion during activation and adoption.",
-          },
-          {
-            question:
-              "Can these videos support sales as well as customer success?",
-            answer:
-              "Yes. Product demo videos can help both prospects and customers understand workflows, features, and outcomes more efficiently.",
-          },
-        ]}
+        faqs={faqs}
         portfolioTitle="Product demo and onboarding examples"
         portfolioDescription="Relevant portfolio samples mapped to Product Demos & Onboarding for this service page."
         portfolioVideos={fullPortfolio

@@ -1,3 +1,6 @@
+import type { Faq } from "@/components/marketing";
+import { PARENT_COMPANY } from "@/lib/site";
+
 export type VideoPackageId = "single" | "five" | "ten";
 
 export type VideoPackage = {
@@ -53,3 +56,31 @@ export function perVideoCents(videoPackage: VideoPackage) {
 export function savingsCents(videoPackage: VideoPackage) {
   return videoPackage.videos * singleVideoCents - videoPackage.priceCents;
 }
+
+const [singleVideo, ...multiVideoPackages] = videoPackages;
+const singleTurnaround = singleVideo.turnaround?.replace(
+  /^Delivered/,
+  "delivered",
+);
+
+const bundlePrices = multiVideoPackages
+  .map(
+    (videoPackage) =>
+      `${videoPackage.videos} videos cost ${formatUsd(videoPackage.priceCents)}`,
+  )
+  .join(" and ");
+
+export const pricingFaqs: Faq[] = [
+  {
+    question: "How much does a video cost at Scribebunny?",
+    answer: `One video costs ${formatUsd(singleVideo.priceCents)} and is ${singleTurnaround}. ${bundlePrices}. For more than 10 videos, contact our team for bulk pricing.`,
+  },
+  {
+    question: "How long does it take to get a video?",
+    answer: `A single video is ${singleTurnaround}.`,
+  },
+  {
+    question: "How do I pay for a video package?",
+    answer: `Choose a package in the pricing section and pay online through secure Stripe checkout. Invoices are issued by ${PARENT_COMPANY}, the parent company of Scribebunny.`,
+  },
+];

@@ -63,7 +63,7 @@ export function MarketingSection({
   label?: string;
   title: string;
   description?: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }) {
   return (
     <section className="relative z-10 py-20">

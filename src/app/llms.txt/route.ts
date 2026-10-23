@@ -1,0 +1,59 @@
+import {
+  formatUsd,
+  perVideoCents,
+  savingsCents,
+  videoPackages,
+} from "@/lib/packages";
+import { services } from "@/lib/services";
+import {
+  ADDRESS,
+  CALENDLY_URL,
+  EMAIL,
+  PARENT_COMPANY,
+  PHONE_DISPLAY,
+  SITE_URL,
+} from "@/lib/site";
+
+export const dynamic = "force-static";
+
+function packageLine(videoPackage: (typeof videoPackages)[number]) {
+  const details =
+    videoPackage.turnaround?.toLowerCase() ??
+    `${formatUsd(perVideoCents(videoPackage))} per video, save ${formatUsd(savingsCents(videoPackage))}`;
+  return `- ${videoPackage.name}: ${formatUsd(videoPackage.priceCents)} (${details})`;
+}
+
+export function GET() {
+  const body = `# Scribebunny
+
+> Scribebunny creates explainer, product demo, onboarding, and white-label video content for SaaS brands, startups, and agencies. Scribebunny is a brand of ${PARENT_COMPANY}.
+
+## Video packages
+
+${videoPackages.map(packageLine).join("\n")}
+- Bulk (more than 10 videos): custom pricing, contact the team at ${SITE_URL}/contact
+
+Buy online through secure Stripe checkout at ${SITE_URL}/#pricing. Invoices are issued by ${PARENT_COMPANY}.
+
+## Services
+
+${services.map((service) => `- [${service.title}](${SITE_URL}${service.href}): ${service.description}`).join("\n")}
+
+## Pages
+
+- [Home](${SITE_URL}): overview, pricing, process, and FAQs
+- [Our Work](${SITE_URL}/work): portfolio videos and case studies
+- [Contact](${SITE_URL}/contact): request a quote or book a strategy call
+
+## Contact
+
+- Email: ${EMAIL}
+- Hotline: ${PHONE_DISPLAY}
+- Address: ${ADDRESS.street}, ${ADDRESS.city}, ${ADDRESS.region} ${ADDRESS.postalCode}, ${ADDRESS.country}
+- Book a strategy call: ${CALENDLY_URL}
+`;
+
+  return new Response(body, {
+    headers: { "Content-Type": "text/plain; charset=utf-8" },
+  });
+}

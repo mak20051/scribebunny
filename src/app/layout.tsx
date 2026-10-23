@@ -1,56 +1,49 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Kalam, Outfit, Patrick_Hand, Space_Grotesk } from "next/font/google";
 import { FacebookPixel } from "@/components/facebook-pixel";
 import { GoogleAnalytics } from "@/components/google-analytics";
 import { LiveChat } from "@/components/live-chat";
+import { pageMetadata } from "@/lib/seo";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const outfit = Outfit({
+  variable: "--font-outfit",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
   subsets: ["latin"],
 });
 
-const title =
-  "Explainer and Product Demo Videos for SaaS, Startups, and Agencies | Scribebunny";
-const shareDescription =
-  "Strategy-led explainer, onboarding, and demo videos for SaaS brands, startups, and agencies.";
+const kalam = Kalam({
+  variable: "--font-kalam",
+  subsets: ["latin"],
+  weight: ["300", "400", "700"],
+});
+
+const patrickHand = Patrick_Hand({
+  variable: "--font-patrick-hand",
+  subsets: ["latin"],
+  weight: "400",
+});
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://scribebunny.com"),
-  alternates: { canonical: "https://scribebunny.com" },
+  metadataBase: new URL(SITE_URL),
   verification: { google: "IpWMWiYQ64A2Xk9aIul0HxQFp1VTFFAlDXV2g26Pkqc" },
-  title,
-  description:
-    "Scribebunny creates explainer, product demo, onboarding, and white-label video content for SaaS brands, startups, and agencies.",
   icons: {
     icon: "/brand/scribebunny-logo-uploaded.png",
     apple: "/brand/scribebunny-logo-uploaded.png",
   },
-  openGraph: {
-    title,
-    description: shareDescription,
-    url: "https://scribebunny.com",
-    siteName: "Scribebunny",
-    type: "website",
-    images: [
-      {
-        url: "https://scribebunny.com/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "Scribebunny - Animation Studio",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title,
-    description: shareDescription,
-  },
+  ...pageMetadata({
+    title: "Explainer & Product Demo Videos for SaaS | Scribebunny",
+    description:
+      "Scribebunny creates explainer, product demo, onboarding, and white-label video content for SaaS brands, startups, and agencies.",
+    shareDescription:
+      "Strategy-led explainer, onboarding, and demo videos for SaaS brands, startups, and agencies.",
+    path: "/",
+  }),
 };
 
 export default function RootLayout({
@@ -61,7 +54,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} bg-white font-sans antialiased`}
+        className={`${outfit.variable} ${spaceGrotesk.variable} ${kalam.variable} ${patrickHand.variable} bg-white font-sans antialiased`}
       >
         <GoogleAnalytics />
         <FacebookPixel />
