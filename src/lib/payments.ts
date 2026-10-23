@@ -201,16 +201,24 @@ export async function describeOrder(sessionId: string) {
 
 /** Record a paid order once: the team alert, then the customer's confirmation. */
 export async function fulfil(sessionId: string) {
-  const order = await loadOrder(sessionId);
-  if (!order.paid || !order.paymentId) return order;
+  let order = await loadOrder(sessionId);
+  const paymentId = order.paymentId;
+  if (!order.paid || !paymentId) return order;
 
-  const intent = await stripe().paymentIntents.retrieve(order.paymentId);
+  const intent = await stripe().paymentIntents.retrieve(paymentId);
   if (intent.metadata?.fulfilled) return order;
+
+  // Stripe finalizes the invoice a moment after payment; wait once so the
+  // alert and the portal can link it.
+  if (!order.invoiceNumber) {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    order = await loadOrder(sessionId);
+  }
 
   await openPortal(order);
   await sendOrderAlert(order);
   await stripe()
-    .paymentIntents.update(order.paymentId, {
+    .paymentIntents.update(paymentId, {
       metadata: { ...intent.metadata, fulfilled: new Date().toISOString() },
     })
     .catch((error) =>
