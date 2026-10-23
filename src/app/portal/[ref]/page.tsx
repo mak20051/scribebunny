@@ -10,7 +10,6 @@ import { LocalTime } from "@/components/local-time";
 import { PortalShell } from "@/components/portal-shell";
 import { SubmitButton } from "@/components/submit-button";
 import {
-  getMessages,
   getPortalOrder,
   roleFor,
   VIDEO_STATUSES,
@@ -71,7 +70,7 @@ export default async function PortalOrderPage({ params, searchParams }: Props) {
     );
   }
 
-  const messages = await getMessages(ref);
+  const { messages } = order;
   const isTeam = role === "team";
   const completed = order.videos.filter(
     (video) => video.status === "Complete",

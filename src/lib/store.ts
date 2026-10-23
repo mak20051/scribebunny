@@ -1,133 +1,120 @@
+import { BlobPreconditionFailedError, get, list, put } from "@vercel/blob";
+
 /**
- * Key-value store for the client portal: Upstash Redis over its REST API
- * (Vercel Marketplace → Upstash injects KV_REST_API_URL/TOKEN or
- * UPSTASH_REDIS_REST_URL/TOKEN). No SDK: each command is one fetch.
+ * JSON documents for the client portal, kept in a private Vercel Blob store
+ * (scribebunny-portal; Vercel injects BLOB_READ_WRITE_TOKEN).
  *
- * Without those env vars (local runs) it falls back to an in-memory map that
- * lives as long as the server process, which is enough to try the portal.
- * Every key is prefixed with "sb:" so a shared Redis stays tidy.
+ *   portal/orders/<ref>.json  ── one document per order: details, videos, messages
+ *
+ * Reads skip the CDN cache, so an update shows up on the next page load.
+ * Updates are compare-and-swap on the blob's ETag: if two people change the
+ * same order at once, the second write retries on top of the first instead of
+ * overwriting it.
+ *
+ * Without the token (local runs) documents live in memory for as long as the
+ * server process does, which is enough to try the portal.
  */
 
-const URL_ = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-const TOKEN =
-  process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+export const storeConfigured = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 
-export const storeConfigured = Boolean(URL_ && TOKEN);
+const ROOT = "portal/";
 
-type Command = (string | number)[];
+type Stored<T> = { value: T; etag: string };
 
-type Memory = {
-  strings: Map<string, string>;
-  lists: Map<string, string[]>;
-  sorted: Map<string, Map<string, number>>;
-};
+const memory: Map<string, { body: string; version: number }> = ((
+  globalThis as { __sbStore?: Map<string, { body: string; version: number }> }
+).__sbStore ??= new Map());
 
-const memory: Memory = ((globalThis as { __sbStore?: Memory }).__sbStore ??= {
-  strings: new Map(),
-  lists: new Map(),
-  sorted: new Map(),
-});
-
-let warned = false;
-
-export async function redis(cmd: Command): Promise<unknown> {
+export async function readJson<T>(path: string): Promise<Stored<T> | null> {
   if (!storeConfigured) {
-    if (!warned && process.env.NODE_ENV === "production") {
-      console.warn("[store] no Redis configured, using per-instance memory");
-      warned = true;
-    }
-    return memoryCommand(cmd);
+    const hit = memory.get(path);
+    return hit
+      ? { value: JSON.parse(hit.body) as T, etag: String(hit.version) }
+      : null;
   }
-  const response = await fetch(URL_!, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${TOKEN}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(cmd),
-    cache: "no-store",
+  const result = await get(`${ROOT}${path}`, {
+    access: "private",
+    useCache: false,
   });
-  const json = (await response.json().catch(() => ({}))) as {
-    result?: unknown;
-    error?: string;
+  if (!result || result.statusCode !== 200) return null;
+  const body = await new Response(result.stream).text();
+  // Compressed reads report a weak ETag (W/"…"); conditional writes need the strong form.
+  return {
+    value: JSON.parse(body) as T,
+    etag: result.blob.etag.replace(/^W\//, ""),
   };
-  if (!response.ok || json.error) {
-    throw new Error(`redis ${response.status}: ${json.error ?? ""}`);
-  }
-  return json.result ?? null;
 }
 
-function memoryCommand([op, key, ...args]: Command): unknown {
-  const k = String(key);
-  switch (op) {
-    case "GET":
-      return memory.strings.get(k) ?? null;
-    case "SET": {
-      const nx = args.includes("NX");
-      if (nx && memory.strings.has(k)) return null;
-      memory.strings.set(k, String(args[0]));
-      return "OK";
+/**
+ * Write a document. With `etag`, only if it is unchanged since that read;
+ * with `onlyIfNew`, only if it doesn't exist yet. Returns false when the
+ * condition fails.
+ */
+export async function writeJson(
+  path: string,
+  value: unknown,
+  condition: { etag?: string; onlyIfNew?: boolean } = {},
+): Promise<boolean> {
+  const body = JSON.stringify(value);
+  if (!storeConfigured) {
+    const hit = memory.get(path);
+    if (condition.onlyIfNew && hit) return false;
+    if (condition.etag && hit && String(hit.version) !== condition.etag) {
+      return false;
     }
-    case "RPUSH": {
-      const list = memory.lists.get(k) ?? [];
-      list.push(...args.map(String));
-      memory.lists.set(k, list);
-      return list.length;
-    }
-    case "LRANGE": {
-      const list = memory.lists.get(k) ?? [];
-      const start = Number(args[0]);
-      const stop = Number(args[1]);
-      return list.slice(start, stop === -1 ? undefined : stop + 1);
-    }
-    case "ZADD": {
-      const set = memory.sorted.get(k) ?? new Map<string, number>();
-      set.set(String(args[1]), Number(args[0]));
-      memory.sorted.set(k, set);
-      return 1;
-    }
-    case "ZREVRANGE": {
-      const set = memory.sorted.get(k) ?? new Map<string, number>();
-      const sorted = [...set.entries()].sort((a, b) => b[1] - a[1]);
-      const start = Number(args[0]);
-      const stop = Number(args[1]);
-      return sorted
-        .slice(start, stop === -1 ? undefined : stop + 1)
-        .map(([member]) => member);
-    }
-    default:
-      throw new Error(`memory store: unsupported command ${op}`);
+    memory.set(path, { body, version: (hit?.version ?? 0) + 1 });
+    return true;
+  }
+  if (condition.onlyIfNew && (await readJson(path))) return false;
+  try {
+    await put(`${ROOT}${path}`, body, {
+      access: "private",
+      contentType: "application/json",
+      addRandomSuffix: false,
+      cacheControlMaxAge: 60,
+      ...(condition.etag
+        ? { ifMatch: condition.etag }
+        : { allowOverwrite: !condition.onlyIfNew }),
+    });
+    return true;
+  } catch (error) {
+    if (error instanceof BlobPreconditionFailedError) return false;
+    if (condition.onlyIfNew && (await readJson(path))) return false;
+    throw error;
   }
 }
 
-export async function getJson<T>(key: string): Promise<T | null> {
-  const value = await redis(["GET", `sb:${key}`]);
-  return typeof value === "string" ? (JSON.parse(value) as T) : null;
+/** Read, change, and write back a document, retrying if someone else wrote first. */
+export async function updateJson<T>(
+  path: string,
+  change: (value: T) => void,
+): Promise<T> {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const current = await readJson<T>(path);
+    if (!current) throw new Error(`No document at ${path}`);
+    change(current.value);
+    if (await writeJson(path, current.value, { etag: current.etag })) {
+      return current.value;
+    }
+  }
+  throw new Error(`Could not update ${path}: too many concurrent changes`);
 }
 
-export async function setJson(key: string, value: unknown, onlyIfNew = false) {
-  const result = await redis([
-    "SET",
-    `sb:${key}`,
-    JSON.stringify(value),
-    ...(onlyIfNew ? ["NX"] : []),
-  ]);
-  return result === "OK";
-}
-
-export async function pushJson(key: string, value: unknown) {
-  await redis(["RPUSH", `sb:${key}`, JSON.stringify(value)]);
-}
-
-export async function listJson<T>(key: string): Promise<T[]> {
-  const values = (await redis(["LRANGE", `sb:${key}`, 0, -1])) as string[];
-  return (values ?? []).map((value) => JSON.parse(value) as T);
-}
-
-export async function addToIndex(key: string, member: string, score: number) {
-  await redis(["ZADD", `sb:${key}`, score, member]);
-}
-
-export async function readIndex(key: string): Promise<string[]> {
-  return ((await redis(["ZREVRANGE", `sb:${key}`, 0, -1])) as string[]) ?? [];
+/** Paths of every document under a folder, e.g. listPaths("orders/"). */
+export async function listPaths(folder: string): Promise<string[]> {
+  if (!storeConfigured) {
+    return [...memory.keys()].filter((key) => key.startsWith(folder));
+  }
+  const paths: string[] = [];
+  let cursor: string | undefined;
+  do {
+    const page = await list({
+      prefix: `${ROOT}${folder}`,
+      cursor,
+      limit: 1000,
+    });
+    paths.push(...page.blobs.map((blob) => blob.pathname.slice(ROOT.length)));
+    cursor = page.hasMore ? page.cursor : undefined;
+  } while (cursor);
+  return paths;
 }

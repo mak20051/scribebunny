@@ -9,23 +9,14 @@ import {
 import { VIDEO_SPEC } from "@/lib/packages";
 import type { Order } from "@/lib/payments";
 import { SITE_URL } from "@/lib/site";
-import {
-  addToIndex,
-  getJson,
-  listJson,
-  pushJson,
-  readIndex,
-  setJson,
-} from "@/lib/store";
+import { listPaths, readJson, updateJson, writeJson } from "@/lib/store";
 
 /**
  * Client portal: one page per paid order where the client and the studio
  * talk, and the studio tracks each video to completion.
  *
- *   paid order ─▶ openPortal()            store (lib/store.ts)
- *                   │                       sb:order:<ref>      order + videos
- *                   │                       sb:messages:<ref>   message thread
- *                   │                       sb:orders           every ref, newest first
+ *   paid order ─▶ openPortal()            private Blob store (lib/store.ts)
+ *                   │                       orders/<ref>.json   details, videos, messages
  *                   ├─▶ client email  /portal/<ref>?k=<client key>
  *                   └─▶ team alert    /portal/<ref>?k=<team key>  and  /portal?k=<admin key>
  *
@@ -69,6 +60,7 @@ export type PortalOrder = {
   invoiceUrl?: string;
   dashboardUrl?: string;
   videos: PortalVideo[];
+  messages: PortalMessage[];
 };
 
 export type PortalMessage = {
@@ -122,20 +114,23 @@ export const portalLink = (ref: string, role: Role) =>
 
 export const dashboardLink = () => `${SITE_URL}/portal?k=${sign("admin")}`;
 
-export const getPortalOrder = (ref: string) =>
-  getJson<PortalOrder>(`order:${ref}`);
+const orderPath = (ref: string) => `orders/${ref}.json`;
 
-export const getMessages = (ref: string) =>
-  listJson<PortalMessage>(`messages:${ref}`);
-
-export async function listPortalOrders() {
-  const refs = await readIndex("orders");
-  const orders = await Promise.all(refs.map(getPortalOrder));
-  return orders.filter((order): order is PortalOrder => order !== null);
+export async function getPortalOrder(ref: string) {
+  if (!/^[A-Z0-9-]{3,40}$/.test(ref)) return null;
+  return (await readJson<PortalOrder>(orderPath(ref)))?.value ?? null;
 }
 
-const savePortalOrder = (order: PortalOrder) =>
-  setJson(`order:${order.ref}`, order);
+/** Every order, newest first. */
+export async function listPortalOrders() {
+  const paths = await listPaths("orders/");
+  const orders = await Promise.all(
+    paths.map(async (path) => (await readJson<PortalOrder>(path))?.value),
+  );
+  return orders
+    .filter((order): order is PortalOrder => Boolean(order))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
 
 /** Create the portal for a paid order. Safe to call again: the first call wins. */
 export async function openPortal(order: Order) {
@@ -163,32 +158,35 @@ export async function openPortal(order: Order) {
       status: "Waiting for brief",
       updatedAt: now,
     })),
+    messages: order.topic
+      ? [
+          {
+            at: now,
+            from: "client",
+            author: order.name || order.email,
+            text: `From checkout, what the video should explain: ${order.topic}`,
+          },
+        ]
+      : [],
   };
-  if (await setJson(`order:${portal.ref}`, portal, true)) {
-    await addToIndex("orders", portal.ref, Date.now());
-    if (order.topic) {
-      await pushJson(`messages:${portal.ref}`, {
-        at: now,
-        from: "client",
-        author: order.name || order.email,
-        text: `From checkout, what the video should explain: ${order.topic}`,
-      } satisfies PortalMessage);
-    }
-  }
+  await writeJson(orderPath(portal.ref), portal, { onlyIfNew: true });
 }
 
 export async function addMessage(ref: string, from: Role, text: string) {
-  const order = await getPortalOrder(ref);
-  if (!order) throw new Error(`No portal order ${ref}`);
-  const message: PortalMessage = {
-    at: new Date().toISOString(),
-    from,
-    author:
-      from === "team" ? STUDIO_AUTHOR : order.client.name || order.client.email,
-    text,
-  };
-  await pushJson(`messages:${ref}`, message);
-  await notifyMessage(order, message);
+  let message: PortalMessage | undefined;
+  const order = await updateJson<PortalOrder>(orderPath(ref), (current) => {
+    message = {
+      at: new Date().toISOString(),
+      from,
+      author:
+        from === "team"
+          ? STUDIO_AUTHOR
+          : current.client.name || current.client.email,
+      text,
+    };
+    current.messages.push(message);
+  });
+  await notifyMessage(order, message!);
 }
 
 export async function updateVideo(
@@ -196,15 +194,17 @@ export async function updateVideo(
   number: number,
   changes: { title?: string; status?: VideoStatus; deliveryUrl?: string },
 ) {
-  const order = await getPortalOrder(ref);
-  if (!order) throw new Error(`No portal order ${ref}`);
-  const video = order.videos.find((item) => item.number === number);
-  if (!video) throw new Error(`No video ${number} on ${ref}`);
-  const wasStatus = video.status;
-  const hadUrl = video.deliveryUrl;
-  Object.assign(video, changes, { updatedAt: new Date().toISOString() });
-  if (!video.deliveryUrl) delete video.deliveryUrl;
-  await savePortalOrder(order);
+  let wasStatus: VideoStatus | undefined;
+  let hadUrl: string | undefined;
+  const order = await updateJson<PortalOrder>(orderPath(ref), (current) => {
+    const target = current.videos.find((item) => item.number === number);
+    if (!target) throw new Error(`No video ${number} on ${ref}`);
+    wasStatus = target.status;
+    hadUrl = target.deliveryUrl;
+    Object.assign(target, changes, { updatedAt: new Date().toISOString() });
+    if (!target.deliveryUrl) delete target.deliveryUrl;
+  });
+  const video = order.videos.find((item) => item.number === number)!;
   const delivered =
     (video.status === "Ready for review" || video.status === "Complete") &&
     (video.status !== wasStatus || video.deliveryUrl !== hadUrl);
@@ -215,20 +215,20 @@ export async function setOrderStatus(
   ref: string,
   status: PortalOrder["status"],
 ) {
-  const order = await getPortalOrder(ref);
-  if (!order) throw new Error(`No portal order ${ref}`);
-  if (order.status === status) return;
-  order.status = status;
-  if (status === "complete") {
-    for (const video of order.videos) {
-      if (video.status !== "Complete") {
-        video.status = "Complete";
-        video.updatedAt = new Date().toISOString();
+  let changed = false;
+  const order = await updateJson<PortalOrder>(orderPath(ref), (current) => {
+    changed = current.status !== status;
+    current.status = status;
+    if (status === "complete") {
+      for (const video of current.videos) {
+        if (video.status !== "Complete") {
+          video.status = "Complete";
+          video.updatedAt = new Date().toISOString();
+        }
       }
     }
-  }
-  await savePortalOrder(order);
-  if (status === "complete") await notifyComplete(order);
+  });
+  if (changed && status === "complete") await notifyComplete(order);
 }
 
 async function notifyMessage(order: PortalOrder, message: PortalMessage) {

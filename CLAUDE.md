@@ -32,15 +32,16 @@ page for page at the time of the rebuild.
 - `src/app/api/checkout/route.ts`: starts checkout; `src/app/api/stripe/webhook/route.ts`: fulfils paid orders
 - `src/app/order-confirmed/page.tsx`: order summary (fulfils the order when no webhook is set)
 - `src/lib/portal.ts`, `src/app/portal/`: client portal (messages, video status, delivery
-  links, mark complete) with signed links; `src/lib/store.ts`: Upstash Redis (REST)
+  links, mark complete) with signed links; `src/lib/store.ts`: private Vercel Blob store
 
 ## Client portal
 Every paid order opens a portal. The confirmation email carries the client link,
 the team alert carries the team link and the "All orders" dashboard link. Links
 are HMAC-signed with `PORTAL_SECRET` (falls back to a key derived from
-`STRIPE_SECRET_KEY`); rotating it revokes every link. Production needs Redis
-(`KV_REST_API_URL`/`KV_REST_API_TOKEN` from Vercel → Upstash); without it the
-store is per-instance memory and portal data is lost.
+`STRIPE_SECRET_KEY`); rotating it revokes every link. Portal data lives in the
+private Vercel Blob store `scribebunny-portal` (`BLOB_READ_WRITE_TOKEN`, Production
+and Preview), one JSON file per order at `portal/orders/<ref>.json`, updated with
+ETag compare-and-swap. Without the token the store is in-memory (local runs only).
 - `src/app/api/leads/route.ts`: emails form leads and forwards them to the aimviz CRM
 
 ## Business details
