@@ -11,8 +11,8 @@ import { PARENT_COMPANY } from "@/lib/site";
  *   10 videos ───▶ $2,199 ($219.90 each)
  *   bulk (10+) ──▶ quoted by the team
  *
- * OWNER TO CONFIRM (2026-10-23): video length, revision rounds, inclusions and
- * ownership mirror the videoexplainers.com single video. Change them here.
+ * Confirmed by the owner (2026-10-23): video length, revision rounds,
+ * inclusions, ownership, and delivery terms as listed here.
  */
 
 export type VideoPackageId = "single" | "five" | "ten";
