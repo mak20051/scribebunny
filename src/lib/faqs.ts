@@ -6,7 +6,7 @@ import {
   VIDEO_SPEC,
   videoPackages,
 } from "@/lib/packages";
-import { PARENT_COMPANY } from "@/lib/site";
+import { ADDRESS, PARENT_COMPANY } from "@/lib/site";
 
 /**
  * FAQ answers shared across pages. Anything about price, delivery, or what a
@@ -51,6 +51,11 @@ export const paymentFaq: Faq = {
   answer: `Pick a package in the pricing section and pay online through secure Stripe checkout. Your receipt and invoice come from ${PARENT_COMPANY}, the parent company of Scribebunny.`,
 };
 
+export const companyFaq: Faq = {
+  question: `How is Scribebunny related to ${PARENT_COMPANY}?`,
+  answer: `Scribebunny is a brand of ${PARENT_COMPANY}, based at ${ADDRESS.street}, ${ADDRESS.city}, ${ADDRESS.region} ${ADDRESS.postalCode}. ${PARENT_COMPANY} handles our billing, so you'll see ${PARENT_COMPANY} on your Stripe checkout, receipt, and invoice. Your video is still made by the Scribebunny studio.`,
+};
+
 export const afterOrderFaq: Faq = {
   question: "What happens after I order?",
   answer:
@@ -81,6 +86,7 @@ export const homeFaqs: Faq[] = [
   includedFaq,
   turnaroundFaq,
   paymentFaq,
+  companyFaq,
   afterOrderFaq,
   briefFaq,
   revisionsFaq,

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { JsonLd } from "@/components/json-ld";
 import type { Faq } from "@/components/marketing";
-import { costFaq } from "@/lib/faqs";
+import { companyFaq, costFaq } from "@/lib/faqs";
 import { breadcrumbSchema, faqSchema, pageMetadata } from "@/lib/seo";
 import { ContactForm } from "@/components/contact-form";
 import {
@@ -46,6 +46,7 @@ const callExpectations = [
         "Within 24 hours. Every call request, quote request, and portal message is read by the small team that makes your video.",
     },
     costFaq,
+    companyFaq,
     {
       question: "Can agencies ask about recurring white-label support?",
       answer:
