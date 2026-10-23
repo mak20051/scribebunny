@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { HeroVideo } from "@/components/hero-video";
+import { PricingSection } from "@/components/pricing-section";
 import { QuotePopupButton } from "@/components/quote-popup";
 import { SiteShell } from "@/components/site-shell";
 import { VideoCard } from "@/components/video-card";
 import { featuredPortfolio } from "@/lib/portfolio";
+import { ADDRESS, EMAIL, PARENT_COMPANY, PHONE_DISPLAY } from "@/lib/site";
 
 const audiences = [
     {
@@ -257,6 +259,20 @@ export default function HomePage() {
             url: "https://scribebunny.com",
             description:
               "Scribebunny helps SaaS brands, startups, and agencies simplify complex products with explainer, demo, onboarding, and white-label video production.",
+            email: EMAIL,
+            telephone: PHONE_DISPLAY,
+            address: {
+              "@type": "PostalAddress",
+              streetAddress: ADDRESS.street,
+              addressLocality: ADDRESS.city,
+              addressRegion: ADDRESS.region,
+              postalCode: ADDRESS.postalCode,
+              addressCountry: "US",
+            },
+            parentOrganization: {
+              "@type": "Organization",
+              name: PARENT_COMPANY,
+            },
           }),
         }}
       />
@@ -519,6 +535,8 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+        <SectionDivider />
+        <PricingSection />
         <SectionDivider />
         <section className="relative z-10 py-20">
           <div className="mx-auto max-w-4xl px-6 text-center sm:px-8 lg:px-12">

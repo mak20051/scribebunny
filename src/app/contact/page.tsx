@@ -9,6 +9,7 @@ import {
   SimpleFaq,
 } from "@/components/marketing";
 import { SiteShell } from "@/components/site-shell";
+import { ADDRESS, PARENT_COMPANY, PHONE_DISPLAY, PHONE_HREF } from "@/lib/site";
 
 const callExpectations = [
     "A quick discussion of your product or service",
@@ -103,6 +104,29 @@ export default function ContactPage() {
             <div className="mx-auto max-w-2xl rounded-3xl border-4 border-gray-800 bg-white p-8 text-left shadow-[12px_12px_0_#2D3748]">
               <ContactForm />
             </div>
+            <div className="mx-auto mt-10 grid max-w-2xl gap-6 text-center md:grid-cols-2">
+              <div>
+                <p className="font-bold text-gray-800">Call our hotline</p>
+                <a
+                  href={PHONE_HREF}
+                  className="font-display text-2xl font-bold text-gray-800 hover:text-[#FF3333]"
+                >
+                  {PHONE_DISPLAY}
+                </a>
+              </div>
+              <div>
+                <p className="font-bold text-gray-800">Office</p>
+                <address className="not-italic text-gray-700">
+                  {ADDRESS.street}
+                  <br />
+                  {ADDRESS.city}, {ADDRESS.region} {ADDRESS.postalCode},{" "}
+                  {ADDRESS.country}
+                </address>
+              </div>
+            </div>
+            <p className="mt-6 text-center text-sm text-gray-700">
+              Scribebunny is a brand of {PARENT_COMPANY}.
+            </p>
           </div>
         </section>
         <PageDivider />

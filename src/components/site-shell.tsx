@@ -1,6 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
-import { CALENDLY_URL } from "@/lib/site";
+import {
+  ADDRESS,
+  CALENDLY_URL,
+  EMAIL,
+  PARENT_COMPANY,
+  PHONE_DISPLAY,
+  PHONE_HREF,
+} from "@/lib/site";
 
 const navItems = [
   { href: "/#services", label: "Services" },
@@ -159,13 +166,30 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
                     Agency Partner Inquiries
                   </Link>
                 </li>
-                <li>info@scribebunny.com</li>
+                <li>{EMAIL}</li>
+                <li>
+                  <a href={PHONE_HREF} className="hover:text-[#FF3333]">
+                    Hotline: {PHONE_DISPLAY}
+                  </a>
+                </li>
+                <li>
+                  <address className="not-italic">
+                    {ADDRESS.street}
+                    <br />
+                    {ADDRESS.city}, {ADDRESS.region} {ADDRESS.postalCode}
+                    <br />
+                    {ADDRESS.country}
+                  </address>
+                </li>
               </ul>
             </div>
           </div>
 
           <div className="flex flex-col items-center justify-between gap-4 border-t-2 border-gray-200 pt-8 text-sm text-gray-500 md:flex-row">
-            <p>© 2026 Scribebunny. All rights reserved.</p>
+            <p>
+              © 2026 Scribebunny, a brand of {PARENT_COMPANY}. All rights
+              reserved.
+            </p>
             <div className="flex gap-6">
               <span>Privacy Policy</span>
               <span>Terms of Service</span>

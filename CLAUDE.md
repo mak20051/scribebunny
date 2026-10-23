@@ -24,13 +24,20 @@ page for page at the time of the rebuild.
 - `src/components/service-page-template.tsx`: shared layout for service pages
 - `src/components/marketing.tsx`: hero, section, FAQ and CTA blocks
 - `src/lib/portfolio.ts`: portfolio videos (YouTube IDs)
-- `src/lib/site.ts`: site URL and Calendly link
+- `src/lib/site.ts`: site URL, Calendly link, contact details, parent company
+- `src/lib/packages.ts`: video package prices (the only place prices live)
+- `src/components/pricing-section.tsx`: home page `#pricing` section
+- `src/app/api/checkout/route.ts`: creates Stripe Checkout sessions (with invoices)
 - `src/app/api/leads/route.ts`: emails form leads and forwards them to the aimviz CRM
 
+## Business details
+Scribebunny is a brand of Infinisys LLC. All invoices are issued by Infinisys
+LLC, so the Stripe account behind `STRIPE_SECRET_KEY` must be Infinisys LLC's.
+
 ## Environment
-SMTP settings live in Vercel env vars (Production): `SMTP_HOST`, `SMTP_PORT`,
-`SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `LEAD_FROM_EMAIL`, `LEAD_TO_EMAIL`.
-Never commit `.env*` files.
+Vercel env vars: `STRIPE_SECRET_KEY` (Production and Preview), plus SMTP
+settings (Production): `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`,
+`SMTP_PASS`, `LEAD_FROM_EMAIL`, `LEAD_TO_EMAIL`. Never commit `.env*` files.
 
 ## Deploys
 Pushing to `main` deploys to production. Use a branch for changes you want to
