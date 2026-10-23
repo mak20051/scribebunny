@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CircleCheck } from "lucide-react";
 import { JsonLd } from "@/components/json-ld";
 import { breadcrumbSchema, pageMetadata } from "@/lib/seo";
 import {
@@ -137,7 +138,11 @@ export default function WorkPage() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {outcomes.map((outcome) => (
               <div key={outcome} className="service-card p-6">
-                <div className="mb-3 text-2xl text-[#FF3333]">✓</div>
+                <CircleCheck
+                  className="mb-3 h-8 w-8 text-[#FF3333]"
+                  strokeWidth={2.25}
+                  aria-hidden="true"
+                />
                 <p className="font-semibold text-gray-700">{outcome}</p>
               </div>
             ))}

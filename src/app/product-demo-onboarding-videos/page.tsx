@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { GraduationCap, MousePointerClick } from "lucide-react";
 import { JsonLd } from "@/components/json-ld";
 import type { Faq } from "@/components/marketing";
 import { breadcrumbSchema, faqSchema, pageMetadata } from "@/lib/seo";
@@ -121,8 +122,8 @@ export default function ProductDemoOnboardingVideosPage() {
         finalTitle="Need product education content your team can use again and again?"
         finalBody="We can help you turn product workflows into clear, reusable demo and onboarding assets."
         finalSecondary="Request a Quote"
-        topDoodle="📱"
-        sideDoodle="🎓"
+        topDoodle={MousePointerClick}
+        sideDoodle={GraduationCap}
       />
     </>
   );

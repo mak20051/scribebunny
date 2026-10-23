@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Handshake, Puzzle } from "lucide-react";
 import { JsonLd } from "@/components/json-ld";
 import type { Faq } from "@/components/marketing";
 import { breadcrumbSchema, faqSchema, pageMetadata } from "@/lib/seo";
@@ -125,7 +126,7 @@ export default function WhiteLabelVideoProductionPage() {
             id="agency-form"
             className="rounded-[1.75rem] border-4 border-gray-800 bg-white px-6 py-7 shadow-[10px_10px_0_rgba(255,230,109,0.9)]"
           >
-            <p className="mb-2 text-sm font-bold uppercase tracking-[0.18em] text-[#FF3333]">
+            <p className="mb-2 text-base font-bold uppercase tracking-[0.18em] text-[#FF3333]">
               Agency partner inquiry
             </p>
             <h2 className="font-display text-4xl font-bold text-gray-800">
@@ -143,8 +144,8 @@ export default function WhiteLabelVideoProductionPage() {
         finalTitle="Need a reliable white-label video partner for your agency?"
         finalBody="Let’s talk about your workflow, client needs, and what a smoother production partnership could look like."
         finalSecondary="Agency Partner Inquiry"
-        topDoodle="🤝"
-        sideDoodle="🧩"
+        topDoodle={Handshake}
+        sideDoodle={Puzzle}
       />
     </>
   );

@@ -5,9 +5,11 @@ import type { VideoPackageId } from "@/lib/packages";
 
 export function CheckoutButton({
   packageId,
+  label = "Buy Now",
   className = "btn-primary w-full",
 }: {
   packageId: VideoPackageId;
+  label?: string;
   className?: string;
 }) {
   const [loading, setLoading] = useState(false);
@@ -42,10 +44,10 @@ export function CheckoutButton({
         disabled={loading}
         className={`${className} disabled:opacity-60`}
       >
-        {loading ? "Opening checkout…" : "Buy Now"}
+        {loading ? "Opening checkout…" : label}
       </button>
       {error ? (
-        <p className="mt-3 text-sm font-medium text-red-600">{error}</p>
+        <p className="mt-3 text-base font-medium text-red-600">{error}</p>
       ) : null}
     </div>
   );

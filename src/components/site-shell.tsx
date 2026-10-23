@@ -1,3 +1,4 @@
+import { Mail, MapPin, Phone } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { MobileNav } from "@/components/mobile-nav";
@@ -74,7 +75,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
               <Link href="/" className="mb-6 flex items-center gap-3">
                 <Logo small />
               </Link>
-              <p className="mb-4 text-sm leading-relaxed text-gray-600">
+              <p className="mb-4 text-base leading-relaxed text-gray-600">
                 Strategy-led explainer, demo, onboarding, and white-label video
                 production for SaaS brands, startups, and agencies.
               </p>
@@ -169,16 +170,34 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
                   </Link>
                 </li>
                 <li>
-                  <a href={`mailto:${EMAIL}`} className="hover:text-[#FF3333]">
+                  <a
+                    href={`mailto:${EMAIL}`}
+                    className="flex items-center gap-2 hover:text-[#FF3333]"
+                  >
+                    <Mail
+                      className="h-5 w-5 shrink-0 text-[#FF3333]"
+                      aria-hidden="true"
+                    />
                     {EMAIL}
                   </a>
                 </li>
                 <li>
-                  <a href={PHONE_HREF} className="hover:text-[#FF3333]">
-                    Hotline: {PHONE_DISPLAY}
+                  <a
+                    href={PHONE_HREF}
+                    className="flex items-center gap-2 hover:text-[#FF3333]"
+                  >
+                    <Phone
+                      className="h-5 w-5 shrink-0 text-[#FF3333]"
+                      aria-hidden="true"
+                    />
+                    {PHONE_DISPLAY}
                   </a>
                 </li>
-                <li>
+                <li className="flex gap-2">
+                  <MapPin
+                    className="mt-1 h-5 w-5 shrink-0 text-[#FF3333]"
+                    aria-hidden="true"
+                  />
                   <address className="not-italic">
                     {ADDRESS.street}
                     <br />
@@ -191,7 +210,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
-          <div className="flex flex-col items-center justify-between gap-4 border-t-2 border-gray-200 pt-8 text-sm text-gray-500 md:flex-row">
+          <div className="flex flex-col items-center justify-between gap-4 border-t-2 border-gray-200 pt-8 text-sm text-gray-600 md:flex-row">
             <p>
               © 2026 Scribebunny, a brand of {PARENT_COMPANY}. All rights
               reserved.

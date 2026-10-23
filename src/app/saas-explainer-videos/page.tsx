@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { MonitorPlay, TrendingUp } from "lucide-react";
 import { JsonLd } from "@/components/json-ld";
 import type { Faq } from "@/components/marketing";
 import { breadcrumbSchema, faqSchema, pageMetadata } from "@/lib/seo";
@@ -118,8 +119,8 @@ export default function SaasExplainerVideosPage() {
         finalTitle="Need a clearer way to explain your SaaS product?"
         finalBody="We can help you shape a sharper product story and turn it into a video asset your team can reuse across channels."
         finalSecondary="Talk to Us About Your Project"
-        topDoodle="💻"
-        sideDoodle="📈"
+        topDoodle={MonitorPlay}
+        sideDoodle={TrendingUp}
       />
     </>
   );

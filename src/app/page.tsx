@@ -1,4 +1,25 @@
 import Link from "next/link";
+import {
+  AppWindow,
+  ArrowRight,
+  CircleCheck,
+  Clapperboard,
+  Clock,
+  Lightbulb,
+  Palette,
+  Pencil,
+  Play,
+  Rabbit,
+  Rocket,
+  ShieldCheck,
+  Sparkles,
+  Star,
+  Target,
+  Users,
+  Zap,
+} from "lucide-react";
+import { CheckoutButton } from "@/components/checkout-button";
+import { IconTile } from "@/components/icon-tile";
 import { HeroVideo } from "@/components/hero-video";
 import { PricingSection } from "@/components/pricing-section";
 import { QuotePopupButton } from "@/components/quote-popup";
@@ -6,7 +27,7 @@ import { SiteShell } from "@/components/site-shell";
 import { VideoCard } from "@/components/video-card";
 import { JsonLd } from "@/components/json-ld";
 import { SimpleFaq, type Faq } from "@/components/marketing";
-import { pricingFaqs } from "@/lib/packages";
+import { formatUsd, pricingFaqs, videoPackages } from "@/lib/packages";
 import { featuredPortfolio } from "@/lib/portfolio";
 import { services } from "@/lib/services";
 import {
@@ -15,25 +36,33 @@ import {
   videoPackagesSchema,
   websiteSchema,
 } from "@/lib/seo";
+import { CALENDLY_URL } from "@/lib/site";
+
+const startingPrice = formatUsd(
+  Math.min(...videoPackages.map((videoPackage) => videoPackage.priceCents)),
+);
 
 const audiences = [
     {
       title: "SaaS Teams",
       description:
         "Homepage explainers, feature videos, onboarding assets, and product demos that help buyers understand your platform faster.",
-      emoji: "💻",
+      icon: AppWindow,
+      tone: "yellow" as const,
     },
     {
       title: "Startups",
       description:
         "Launch-ready videos that sharpen your product story for homepage, fundraising, sales, and early growth.",
-      emoji: "🚀",
+      icon: Rocket,
+      tone: "coral" as const,
     },
     {
       title: "Agencies",
       description:
         "White-label production support for agencies that need reliable video delivery without building an in-house team.",
-      emoji: "🤝",
+      icon: Users,
+      tone: "teal" as const,
     },
   ],
   outcomes = [
@@ -171,7 +200,10 @@ const audiences = [
   ] satisfies Faq[];
 function Doodles() {
   return (
-    <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+    <div
+      className="pointer-events-none fixed inset-0 z-0 hidden overflow-hidden md:block"
+      aria-hidden="true"
+    >
       <div
         className="scribble-line"
         style={{
@@ -207,14 +239,38 @@ function Doodles() {
           animationDelay: "-15s",
         }}
       />
-      <div className="doodle doodle-1">✏️</div>
-      <div className="doodle doodle-2">🎨</div>
-      <div className="doodle doodle-3">✨</div>
-      <div className="doodle doodle-4">🐰</div>
-      <div className="doodle doodle-5">🎬</div>
-      <div className="doodle doodle-6">💡</div>
-      <div className="doodle doodle-7">🎯</div>
-      <div className="doodle doodle-8">🚀</div>
+      <div className="doodle doodle-1">
+        <Pencil className="h-14 w-14" strokeWidth={1.75} aria-hidden="true" />
+      </div>
+      <div className="doodle doodle-2">
+        <Palette className="h-14 w-14" strokeWidth={1.75} aria-hidden="true" />
+      </div>
+      <div className="doodle doodle-3">
+        <Sparkles className="h-14 w-14" strokeWidth={1.75} aria-hidden="true" />
+      </div>
+      <div className="doodle doodle-4">
+        <Rabbit className="h-14 w-14" strokeWidth={1.75} aria-hidden="true" />
+      </div>
+      <div className="doodle doodle-5">
+        <Clapperboard
+          className="h-14 w-14"
+          strokeWidth={1.75}
+          aria-hidden="true"
+        />
+      </div>
+      <div className="doodle doodle-6">
+        <Lightbulb
+          className="h-14 w-14"
+          strokeWidth={1.75}
+          aria-hidden="true"
+        />
+      </div>
+      <div className="doodle doodle-7">
+        <Target className="h-14 w-14" strokeWidth={1.75} aria-hidden="true" />
+      </div>
+      <div className="doodle doodle-8">
+        <Rocket className="h-14 w-14" strokeWidth={1.75} aria-hidden="true" />
+      </div>
     </div>
   );
 }
@@ -230,83 +286,96 @@ export default function HomePage() {
       <JsonLd data={faqSchema(faqs)} />
       <main className="relative overflow-x-hidden bg-[linear-gradient(135deg,#FFF5F5_0%,#FFFFFF_50%,#FFF9F0_100%)] text-slate-800">
         <Doodles />
-        <section className="relative z-10 flex min-h-screen items-center justify-center overflow-hidden px-6 pt-32 pb-20 sm:px-8 lg:px-12">
-          <div className="max-w-6xl text-center">
-            <div className="wiggle mb-8 inline-flex rotate-[-2deg] items-center gap-2 rounded-full border-[3px] border-gray-800 bg-[#FFE66D] px-6 py-3 font-bold text-gray-800 shadow-lg">
-              <span className="text-2xl">🎉</span>
-              <span>Built for SaaS teams, startups, and agency partners</span>
-            </div>
-            <h1 className="font-display mb-6 text-5xl font-bold leading-tight text-gray-800 md:text-7xl">
-              {"Explainer and Product Demo Videos That "}
-              <br />
-              <span className="relative inline-block">
-                Convert
-                <svg
-                  className="absolute -bottom-4 left-0 w-full"
-                  height="20"
-                  viewBox="0 0 200 20"
-                  preserveAspectRatio="none"
+        <section className="relative z-10 overflow-hidden px-6 pt-32 pb-20 sm:px-8 lg:px-12 lg:pt-36">
+          <div className="mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-[1.05fr_1fr] lg:gap-16">
+            <div className="text-center lg:text-left">
+              <div className="mb-7 inline-flex rotate-[-2deg] items-center gap-2 rounded-full border-[3px] border-gray-800 bg-[#FFE66D] px-5 py-2 text-base font-bold text-gray-800 shadow-[4px_4px_0_#2D3748]">
+                <Zap className="h-5 w-5" strokeWidth={2.5} aria-hidden="true" />
+                <span>
+                  1 video for {startingPrice}, delivered in 24 to 48 hours
+                </span>
+              </div>
+              <h1 className="font-display text-[2.75rem] leading-[1.05] font-extrabold text-gray-800 sm:text-6xl lg:text-[3.5rem] xl:text-[4rem]">
+                {"Explainer & Product Demo Videos That "}
+                <span className="relative inline-block text-[#FF3333]">
+                  Convert
+                  <svg
+                    className="absolute -bottom-3 left-0 w-full"
+                    height="16"
+                    viewBox="0 0 200 20"
+                    preserveAspectRatio="none"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M0 15 Q 50 0, 100 15 T 200 15"
+                      stroke="#2D3748"
+                      strokeWidth="6"
+                      fill="none"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </span>
+              </h1>
+              <p className="mx-auto mt-8 max-w-2xl text-xl leading-relaxed text-gray-700 md:text-2xl lg:mx-0">
+                Clear explainer, demo, and onboarding videos that help SaaS
+                brands, startups, and agencies simplify complex products for
+                launches, sales, and onboarding.
+              </p>
+              <div className="mt-10 flex flex-col items-center gap-5 sm:flex-row sm:justify-center lg:justify-start">
+                <CheckoutButton
+                  packageId="single"
+                  label={`Order a Video for ${startingPrice}`}
+                  className="btn-primary text-lg"
+                />
+                <a
+                  href={CALENDLY_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn-secondary text-lg"
                 >
-                  <path
-                    d="M0 15 Q 50 0, 100 15 T 200 15"
-                    stroke="#FF6B6B"
-                    strokeWidth="6"
-                    fill="none"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </span>
-            </h1>
-            <p className="font-handwritten mx-auto mb-10 max-w-3xl text-2xl text-gray-600">
-              We help SaaS brands, startups, and agencies simplify complex
-              products, improve homepage clarity, and create videos that support
-              launches, sales, and onboarding.
-            </p>
-            <div className="mb-6 flex flex-wrap justify-center gap-4">
+                  Book a Free Strategy Call
+                </a>
+              </div>
               <a
-                href="https://calendly.com/scribebunny-info/30min"
-                target="_blank"
-                rel="noreferrer"
-                className="btn-primary text-lg"
+                href="#pricing"
+                className="mt-6 inline-flex items-center gap-2 text-lg font-bold text-[#FF3333] hover:underline"
               >
-                Book a Strategy Call
+                See 5 and 10 video packages
+                <ArrowRight className="h-5 w-5" aria-hidden="true" />
               </a>
-              <a href="#work" className="btn-secondary text-lg">
-                View Our Work
-              </a>
-              <QuotePopupButton />
-            </div>
-            <p className="mb-12 font-bold text-gray-600">
-              Free consultation • No commitment • Response within 24 hours
-            </p>
-            <div className="mb-16 flex flex-wrap justify-center gap-8">
-              <div className="hand-drawn-box min-w-[180px] px-6 py-4">
-                <div className="text-sm font-bold text-gray-600">
-                  Built for SaaS teams, startups, and agency partners
-                </div>
-              </div>
-              <div className="hand-drawn-box min-w-[180px] px-6 py-4">
-                <div className="text-sm font-bold text-gray-600">
-                  Explainers, demos, onboarding, and white-label production
-                </div>
-              </div>
-              <div className="hand-drawn-box min-w-[180px] px-6 py-4">
-                <div className="text-sm font-bold text-gray-600">
-                  Structured timelines for starter, standard, and custom
-                  projects
-                </div>
-              </div>
-              <div className="hand-drawn-box min-w-[180px] px-6 py-4">
-                <div className="text-sm font-bold text-gray-600">
+              <ul className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-3 text-base font-semibold text-gray-700 lg:justify-start">
+                <li className="flex items-center gap-2">
+                  <ShieldCheck
+                    className="h-5 w-5 text-[#FF3333]"
+                    aria-hidden="true"
+                  />
+                  Secure Stripe checkout
+                </li>
+                <li className="flex items-center gap-2">
+                  <Clock
+                    className="h-5 w-5 text-[#FF3333]"
+                    aria-hidden="true"
+                  />
                   Response within 24 hours
-                </div>
-              </div>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CircleCheck
+                    className="h-5 w-5 text-[#FF3333]"
+                    aria-hidden="true"
+                  />
+                  Free consultation, no commitment
+                </li>
+              </ul>
             </div>
-            <div className="relative mx-auto max-w-4xl">
-              <div className="absolute -top-8 right-0 rotate-6 rounded-2xl border-[3px] border-gray-800 bg-[#FFE66D] p-4 shadow-[6px_6px_0_#2D3748]">
-                <div className="text-2xl">⭐⭐⭐⭐⭐</div>
+            <div className="relative">
+              <div className="pointer-events-none absolute -top-5 -right-2 z-10 flex rotate-6 items-center gap-2 rounded-2xl border-[3px] border-gray-800 bg-[#FF6B6B] px-4 py-2 font-bold text-white shadow-[4px_4px_0_#2D3748]">
+                <Play className="h-5 w-5 fill-white" aria-hidden="true" />
+                Watch how we work
               </div>
               <HeroVideo />
+              <p className="font-handwritten mt-6 text-center text-2xl text-gray-700">
+                Explainers, demos, onboarding, and white-label production
+              </p>
             </div>
           </div>
         </section>
@@ -314,14 +383,14 @@ export default function HomePage() {
         <section className="relative z-10 py-20">
           <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
             <div className="mb-16 text-center">
-              <span className="mb-4 inline-block rotate-[-2deg] rounded-full border-2 border-gray-800 bg-[#FFE66D] px-4 py-2 text-sm font-bold">
+              <span className="mb-4 inline-block rotate-[-2deg] rounded-full border-2 border-gray-800 bg-[#FFE66D] px-4 py-2 text-base font-bold">
                 WHO WE HELP
               </span>
               <h2 className="font-display text-5xl font-bold text-gray-800">
                 Built for teams that need clarity, speed, and dependable
                 delivery
               </h2>
-              <p className="font-handwritten mx-auto mt-4 max-w-3xl text-lg text-gray-600">
+              <p className="mx-auto mt-4 max-w-3xl text-lg leading-relaxed text-gray-700 md:text-xl">
                 Scribebunny works with teams that need video assets to explain
                 products clearly, support launches, improve onboarding, and
                 deliver stronger communication across marketing, sales, and
@@ -331,7 +400,7 @@ export default function HomePage() {
             <div className="grid gap-8 md:grid-cols-3">
               {audiences.map((audience) => (
                 <article key={audience.title} className="service-card">
-                  <div className="mb-4 text-5xl">{audience.emoji}</div>
+                  <IconTile icon={audience.icon} tone={audience.tone} />
                   <h3 className="mb-3 text-2xl font-bold text-gray-800">
                     {audience.title}
                   </h3>
@@ -345,14 +414,14 @@ export default function HomePage() {
         <section id="services" className="relative z-10 py-20">
           <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
             <div className="mb-16 text-center">
-              <span className="mb-4 inline-block rotate-[-2deg] rounded-full border-2 border-gray-800 bg-[#FFE66D] px-4 py-2 text-sm font-bold">
+              <span className="mb-4 inline-block rotate-[-2deg] rounded-full border-2 border-gray-800 bg-[#FFE66D] px-4 py-2 text-base font-bold">
                 WHAT WE DO
               </span>
               <h2 className="font-display text-5xl font-bold text-gray-800">
                 {"Our Core "}
                 <span className="text-[#FF3333]">Services</span>
               </h2>
-              <p className="font-handwritten mx-auto mt-4 max-w-2xl text-lg text-gray-600">
+              <p className="mx-auto mt-4 max-w-2xl text-lg leading-relaxed text-gray-700 md:text-xl">
                 Video services designed around business use cases, product
                 clarity, and dependable delivery.
               </p>
@@ -364,16 +433,21 @@ export default function HomePage() {
                   href={service.href}
                   className="service-card group cursor-pointer block"
                 >
-                  <div className="mb-4 text-5xl transition-transform group-hover:scale-110">
-                    {service.emoji}
-                  </div>
+                  <IconTile
+                    icon={service.icon}
+                    tone="yellow"
+                    className="mb-5 transition-transform group-hover:-rotate-6"
+                  />
                   <h3 className="mb-3 text-2xl font-bold text-gray-800">
                     {service.title}
                   </h3>
                   <p className="mb-4 text-gray-600">{service.description}</p>
                   <div className="flex items-center gap-2 font-bold text-[#FF3333]">
                     <span>Learn More</span>
-                    <span className="text-xl">→</span>
+                    <ArrowRight
+                      className="h-5 w-5 transition-transform group-hover:translate-x-1"
+                      aria-hidden="true"
+                    />
                   </div>
                 </Link>
               ))}
@@ -383,13 +457,13 @@ export default function HomePage() {
         <SectionDivider />
         <section className="relative z-10 py-20 bg-[#FFF5F5]">
           <div className="mx-auto max-w-6xl px-6 sm:px-8 lg:px-12 text-center">
-            <span className="mb-4 inline-block rotate-[1deg] rounded-full border-2 border-gray-800 bg-[#FF6B6B] px-4 py-2 text-sm font-bold text-white">
+            <span className="mb-4 inline-block rotate-[1deg] rounded-full border-2 border-gray-800 bg-[#FF6B6B] px-4 py-2 text-base font-bold text-white">
               OUTCOMES
             </span>
             <h2 className="font-display text-5xl font-bold text-gray-800">
               What Our Videos Help You Do
             </h2>
-            <p className="font-handwritten mx-auto mt-4 max-w-3xl text-lg text-gray-600">
+            <p className="mx-auto mt-4 max-w-3xl text-lg leading-relaxed text-gray-700 md:text-xl">
               The goal is not just to create a polished video. It is to help
               your audience understand faster, support the right business
               outcome, and give your team a more useful asset.
@@ -397,7 +471,11 @@ export default function HomePage() {
             <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3 text-left">
               {outcomes.map((outcome) => (
                 <div key={outcome} className="service-card p-6">
-                  <div className="mb-3 text-2xl text-[#FF3333]">✓</div>
+                  <CircleCheck
+                    className="mb-3 h-8 w-8 text-[#FF3333]"
+                    strokeWidth={2.25}
+                    aria-hidden="true"
+                  />
                   <p className="font-semibold text-gray-700">{outcome}</p>
                 </div>
               ))}
@@ -408,14 +486,14 @@ export default function HomePage() {
         <section id="work" className="relative z-10 bg-white py-20">
           <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
             <div className="mb-12 text-center">
-              <span className="mb-4 inline-block rotate-[2deg] rounded-full border-2 border-gray-800 bg-[#FF6B6B] px-4 py-2 text-sm font-bold text-white">
+              <span className="mb-4 inline-block rotate-[2deg] rounded-full border-2 border-gray-800 bg-[#FF6B6B] px-4 py-2 text-base font-bold text-white">
                 OUR WORK
               </span>
               <h2 className="font-display text-5xl font-bold text-gray-800">
                 {"Featured "}
                 <span className="text-[#FF3333]">Projects</span>
               </h2>
-              <p className="font-handwritten mx-auto mt-4 max-w-3xl text-lg text-gray-600">
+              <p className="mx-auto mt-4 max-w-3xl text-lg leading-relaxed text-gray-700 md:text-xl">
                 A closer look at the types of videos we create to support
                 product clarity, launches, onboarding, and conversion.
               </p>
@@ -440,14 +518,14 @@ export default function HomePage() {
         <section id="process" className="relative z-10 py-20">
           <div className="mx-auto max-w-6xl px-6 sm:px-8 lg:px-12">
             <div className="mb-16 text-center">
-              <span className="mb-4 inline-block rotate-[-1deg] rounded-full border-2 border-gray-800 bg-green-400 px-4 py-2 text-sm font-bold">
+              <span className="mb-4 inline-block rotate-[-1deg] rounded-full border-2 border-gray-800 bg-green-400 px-4 py-2 text-base font-bold">
                 HOW WE WORK
               </span>
               <h2 className="font-display text-5xl font-bold text-gray-800">
                 {"Our Creative "}
                 <span className="text-[#FF3333]">Process</span>
               </h2>
-              <p className="font-handwritten mx-auto mt-4 max-w-3xl text-lg text-gray-600">
+              <p className="mx-auto mt-4 max-w-3xl text-lg leading-relaxed text-gray-700 md:text-xl">
                 We start with product, audience, and use-case clarity — then
                 move through scripting, storyboarding, production, and delivery
                 with a workflow designed to keep teams aligned and reduce
@@ -464,13 +542,17 @@ export default function HomePage() {
                     {step.number}
                   </div>
                   <h3 className="mb-2 text-xl font-bold">{step.title}</h3>
-                  <p className="text-sm text-gray-600">{step.description}</p>
+                  <p className="text-base text-gray-600">{step.description}</p>
                 </div>
               ))}
             </div>
             <div className="mt-12 text-center">
               <div className="inline-flex items-center gap-3 rounded-2xl border-4 border-gray-800 bg-white px-6 py-4 shadow-[8px_8px_0_#FFE66D]">
-                <span className="text-3xl">⏱️</span>
+                <Clock
+                  className="h-8 w-8 shrink-0 text-[#FF3333]"
+                  strokeWidth={2.25}
+                  aria-hidden="true"
+                />
                 <div className="text-left">
                   <div className="font-bold text-gray-800">
                     Clear strategy before production • Defined review flow •
@@ -486,13 +568,13 @@ export default function HomePage() {
         <SectionDivider />
         <section className="relative z-10 py-20">
           <div className="mx-auto max-w-4xl px-6 text-center sm:px-8 lg:px-12">
-            <span className="mb-4 inline-block rotate-[1deg] rounded-full border-2 border-gray-800 bg-[#4ECDC4] px-4 py-2 text-sm font-bold">
+            <span className="mb-4 inline-block rotate-[1deg] rounded-full border-2 border-gray-800 bg-[#4ECDC4] px-4 py-2 text-base font-bold">
               TIMELINE
             </span>
             <h2 className="font-display text-5xl font-bold text-gray-800">
               Structured timelines based on scope
             </h2>
-            <p className="font-handwritten mt-6 text-xl text-gray-600">
+            <p className="mt-6 text-xl leading-relaxed text-gray-700">
               Starter, standard, and custom delivery paths are scoped separately
               so expectations stay clear from the beginning.
             </p>
@@ -505,7 +587,7 @@ export default function HomePage() {
         <section className="relative z-10 bg-[#FFF5F5] py-20">
           <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
             <div className="mb-16 text-center">
-              <span className="mb-4 inline-block rotate-[1deg] rounded-full border-2 border-gray-800 bg-[#FF6B6B] px-4 py-2 text-sm font-bold text-white">
+              <span className="mb-4 inline-block rotate-[1deg] rounded-full border-2 border-gray-800 bg-[#FF6B6B] px-4 py-2 text-base font-bold text-white">
                 TESTIMONIALS
               </span>
               <h2 className="font-display text-5xl font-bold text-gray-800">
@@ -520,12 +602,15 @@ export default function HomePage() {
                     {Array.from({
                       length: 5,
                     }).map((item, index) => (
-                      <span key={index} className="star">
-                        ★
-                      </span>
+                      <Star
+                        key={index}
+                        className="h-6 w-6 fill-[#FFE66D] text-gray-800"
+                        strokeWidth={2}
+                        aria-hidden="true"
+                      />
                     ))}
                   </div>
-                  <p className="font-handwritten mb-6 text-lg text-gray-700">
+                  <p className="font-handwritten mb-6 text-2xl leading-snug text-gray-800">
                     “{testimonial.quote}”
                   </p>
                   <div className="flex items-center gap-4">
@@ -538,7 +623,7 @@ export default function HomePage() {
                       <div className="font-bold text-gray-800">
                         {testimonial.name}
                       </div>
-                      <div className="text-sm text-gray-600">
+                      <div className="text-base text-gray-600">
                         {testimonial.role}
                       </div>
                     </div>
@@ -552,7 +637,7 @@ export default function HomePage() {
         <section id="faq" className="relative z-10 py-20">
           <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
             <div className="mb-16 text-center">
-              <span className="mb-4 inline-block rotate-[-1deg] rounded-full border-2 border-gray-800 bg-[#4ECDC4] px-4 py-2 text-sm font-bold">
+              <span className="mb-4 inline-block rotate-[-1deg] rounded-full border-2 border-gray-800 bg-[#4ECDC4] px-4 py-2 text-base font-bold">
                 FAQS
               </span>
               <h2 className="font-display text-5xl font-bold text-gray-800">
@@ -568,18 +653,23 @@ export default function HomePage() {
           id="contact"
           className="relative z-10 overflow-hidden bg-[#FFE66D] py-20"
         >
-          <div className="absolute top-10 left-10 text-6xl opacity-20">✏️</div>
-          <div className="absolute right-10 bottom-10 text-6xl opacity-20">
-            🎨
-          </div>
-          <div className="absolute top-1/2 right-20 text-5xl opacity-20">
-            ✨
-          </div>
+          <Pencil
+            className="absolute top-10 left-10 h-16 w-16 opacity-20"
+            aria-hidden="true"
+          />
+          <Palette
+            className="absolute right-10 bottom-10 h-16 w-16 opacity-20"
+            aria-hidden="true"
+          />
+          <Sparkles
+            className="absolute top-1/2 right-20 h-14 w-14 opacity-20"
+            aria-hidden="true"
+          />
           <div className="relative mx-auto max-w-4xl px-6 text-center sm:px-8">
             <h2 className="font-display text-5xl font-bold text-gray-800 md:text-6xl">
               Need a clearer way to explain your product?
             </h2>
-            <p className="font-handwritten mx-auto mt-6 max-w-3xl text-xl text-gray-700">
+            <p className="mx-auto mt-6 max-w-3xl text-xl leading-relaxed text-gray-700">
               Let’s talk about your product, audience, and business goal — and
               map out the right explainer, demo, onboarding, or white-label
               video approach.

@@ -1,6 +1,8 @@
 "use client";
 
+import { PartyPopper, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -24,7 +26,11 @@ export function QuotePopupButton({
       <button onClick={() => setOpen(true)} className={className} type="button">
         Request a Quote
       </button>
-      {open && <QuotePopup onClose={() => setOpen(false)} />}
+      {open &&
+        createPortal(
+          <QuotePopup onClose={() => setOpen(false)} />,
+          document.body,
+        )}
     </>
   );
 }
@@ -103,7 +109,7 @@ function QuotePopup({ onClose }: { onClose: () => void }) {
             <h2 className="font-display text-2xl font-bold text-gray-800 leading-tight">
               Request a Quote
             </h2>
-            <p className="text-sm text-gray-700 mt-1">
+            <p className="mt-1 text-base text-gray-700">
               Tell us about your project — we&apos;ll get back within 24 hours.
             </p>
           </div>
@@ -113,14 +119,18 @@ function QuotePopup({ onClose }: { onClose: () => void }) {
             aria-label="Close"
             className="ml-4 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-gray-800 bg-white font-bold text-gray-800 transition hover:bg-[#FF3333] hover:text-white"
           >
-            ✕
+            <X className="h-5 w-5" strokeWidth={2.5} aria-hidden="true" />
           </button>
         </div>
 
         <div className="px-6 py-6">
           {sent ? (
             <div className="flex flex-col items-center gap-4 py-8 text-center">
-              <div className="text-6xl">🎉</div>
+              <PartyPopper
+                className="h-16 w-16 text-[#FF3333]"
+                strokeWidth={1.75}
+                aria-hidden="true"
+              />
               <h3 className="font-display text-2xl font-bold text-gray-800">
                 Quote request sent!
               </h3>
@@ -160,7 +170,9 @@ function QuotePopup({ onClose }: { onClose: () => void }) {
                 />
               </div>
               {emailError && (
-                <p className="text-sm font-medium text-red-600">{emailError}</p>
+                <p className="text-base font-medium text-red-600">
+                  {emailError}
+                </p>
               )}
               <div className="grid gap-4 sm:grid-cols-2">
                 <input
@@ -191,9 +203,9 @@ function QuotePopup({ onClose }: { onClose: () => void }) {
                 disabled={sending}
                 className="btn-primary w-full text-lg disabled:opacity-60"
               >
-                {sending ? "Sending…" : "Send Quote Request 🚀"}
+                {sending ? "Sending…" : "Send Quote Request"}
               </button>
-              <p className="text-center text-xs text-gray-500">
+              <p className="text-center text-sm text-gray-600">
                 Free consultation • No commitment • Response within 24 hours
               </p>
             </form>

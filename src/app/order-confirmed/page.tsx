@@ -13,13 +13,13 @@ export default function OrderConfirmedPage() {
     <SiteShell>
       <main className="relative overflow-x-hidden bg-[linear-gradient(135deg,#FFF5F5_0%,#FFFFFF_50%,#FFF9F0_100%)] px-6 pt-32 pb-24 text-slate-800 sm:px-8 lg:px-12">
         <div className="mx-auto max-w-3xl text-center">
-          <span className="mb-4 inline-block rotate-[-2deg] rounded-full border-2 border-gray-800 bg-[#FFE66D] px-4 py-2 text-sm font-bold">
+          <span className="mb-4 inline-block rotate-[-2deg] rounded-full border-2 border-gray-800 bg-[#FFE66D] px-4 py-2 text-base font-bold">
             Payment received
           </span>
           <h1 className="font-display text-5xl font-bold text-gray-800 md:text-6xl">
             Your video package is confirmed
           </h1>
-          <p className="font-handwritten mx-auto mt-6 max-w-2xl text-2xl text-gray-600">
+          <p className="mx-auto mt-6 max-w-2xl text-xl leading-relaxed text-gray-700 md:text-2xl">
             Thanks for your order. Your receipt and invoice from{" "}
             {PARENT_COMPANY} are on their way to your email, and our team will
             reach out within 24 hours to collect your brief.

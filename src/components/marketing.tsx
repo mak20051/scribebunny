@@ -1,3 +1,4 @@
+import { CircleCheck, Palette, Pencil, Sparkles } from "lucide-react";
 import { CALENDLY_URL } from "@/lib/site";
 
 export type Faq = {
@@ -27,13 +28,13 @@ export function MarketingHero({
   return (
     <section className="relative z-10 overflow-hidden px-6 pt-32 pb-18 sm:px-8 lg:px-12">
       <div className="mx-auto max-w-5xl text-center">
-        <span className="mb-4 inline-block rotate-[-2deg] rounded-full border-2 border-gray-800 bg-[#FFE66D] px-4 py-2 text-sm font-bold">
+        <span className="mb-4 inline-block rotate-[-2deg] rounded-full border-2 border-gray-800 bg-[#FFE66D] px-4 py-2 text-base font-bold">
           {label}
         </span>
         <h1 className="font-display text-5xl font-bold leading-tight text-gray-800 md:text-7xl">
           {title}
         </h1>
-        <p className="font-handwritten mx-auto mt-6 max-w-3xl text-2xl text-gray-600">
+        <p className="mx-auto mt-6 max-w-3xl text-xl leading-relaxed text-gray-700 md:text-2xl">
           {description}
         </p>
         <div className="mt-10 flex flex-wrap justify-center gap-4">
@@ -70,7 +71,7 @@ export function MarketingSection({
       <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
         <div className="mb-14 text-center">
           {label ? (
-            <span className="mb-4 inline-block rotate-[1deg] rounded-full border-2 border-gray-800 bg-[#FF6B6B] px-4 py-2 text-sm font-bold text-white">
+            <span className="mb-4 inline-block rotate-[1deg] rounded-full border-2 border-gray-800 bg-[#FF6B6B] px-4 py-2 text-base font-bold text-white">
               {label}
             </span>
           ) : null}
@@ -78,7 +79,7 @@ export function MarketingSection({
             {title}
           </h2>
           {description ? (
-            <p className="font-handwritten mx-auto mt-4 max-w-3xl text-lg text-gray-600">
+            <p className="mx-auto mt-4 max-w-3xl text-lg leading-relaxed text-gray-700 md:text-xl">
               {description}
             </p>
           ) : null}
@@ -94,7 +95,11 @@ export function BulletGrid({ items }: { items: string[] }) {
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
       {items.map((item) => (
         <div key={item} className="service-card p-6">
-          <div className="mb-3 text-2xl text-[#FF3333]">✓</div>
+          <CircleCheck
+            className="mb-3 h-8 w-8 text-[#FF3333]"
+            strokeWidth={2.25}
+            aria-hidden="true"
+          />
           <p className="font-semibold text-gray-700">{item}</p>
         </div>
       ))}
@@ -108,7 +113,7 @@ export function SimpleFaq({ items }: { items: Faq[] }) {
       {items.map((item) => (
         <article key={item.question} className="testimonial-card">
           <h3 className="text-xl font-bold text-gray-800">{item.question}</h3>
-          <p className="mt-4 text-gray-600">{item.answer}</p>
+          <p className="mt-4 text-gray-700">{item.answer}</p>
         </article>
       ))}
     </div>
@@ -133,14 +138,23 @@ export function FinalCta({
       id="contact-cta"
       className="relative z-10 overflow-hidden bg-[#FFE66D] py-20"
     >
-      <div className="absolute top-10 left-10 text-6xl opacity-20">✏️</div>
-      <div className="absolute right-10 bottom-10 text-6xl opacity-20">🎨</div>
-      <div className="absolute top-1/2 right-20 text-5xl opacity-20">✨</div>
+      <Pencil
+        className="absolute top-10 left-10 h-16 w-16 opacity-20"
+        aria-hidden="true"
+      />
+      <Palette
+        className="absolute right-10 bottom-10 h-16 w-16 opacity-20"
+        aria-hidden="true"
+      />
+      <Sparkles
+        className="absolute top-1/2 right-20 h-14 w-14 opacity-20"
+        aria-hidden="true"
+      />
       <div className="relative mx-auto max-w-4xl px-6 text-center sm:px-8">
         <h2 className="font-display text-5xl font-bold text-gray-800 md:text-6xl">
           {title}
         </h2>
-        <p className="font-handwritten mx-auto mt-6 max-w-3xl text-xl text-gray-700">
+        <p className="mx-auto mt-6 max-w-3xl text-xl leading-relaxed text-gray-700">
           {description}
         </p>
         <div className="mb-6 mt-8 flex flex-wrap justify-center gap-4">

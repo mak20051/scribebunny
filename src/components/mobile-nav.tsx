@@ -1,5 +1,6 @@
 "use client";
 
+import { Menu, Phone, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CALENDLY_URL, PHONE_DISPLAY, PHONE_HREF } from "@/lib/site";
@@ -32,7 +33,11 @@ export function MobileNav({
         aria-label={open ? "Close menu" : "Open menu"}
         className="flex h-11 w-11 items-center justify-center rounded-xl border-[3px] border-gray-800 bg-white text-xl font-bold text-gray-800 shadow-[3px_3px_0_#2D3748]"
       >
-        {open ? "✕" : "☰"}
+        {open ? (
+          <X className="h-6 w-6" strokeWidth={2.5} aria-hidden="true" />
+        ) : (
+          <Menu className="h-6 w-6" strokeWidth={2.5} aria-hidden="true" />
+        )}
       </button>
 
       {open ? (
@@ -64,8 +69,9 @@ export function MobileNav({
           </ul>
           <a
             href={PHONE_HREF}
-            className="mt-3 block px-2 font-bold text-gray-700"
+            className="mt-3 flex items-center gap-2 px-2 font-bold text-gray-700"
           >
+            <Phone className="h-5 w-5 text-[#FF3333]" aria-hidden="true" />
             Hotline: {PHONE_DISPLAY}
           </a>
           <a

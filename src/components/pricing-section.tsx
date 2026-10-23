@@ -1,3 +1,4 @@
+import { Clock, Film, Lock, Users } from "lucide-react";
 import { CheckoutButton } from "@/components/checkout-button";
 import {
   formatUsd,
@@ -12,7 +13,7 @@ export function PricingSection() {
     <section id="pricing" className="relative z-10 py-20">
       <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
         <div className="mb-16 text-center">
-          <span className="mb-4 inline-block rotate-[-1deg] rounded-full border-2 border-gray-800 bg-[#FFE66D] px-4 py-2 text-sm font-bold">
+          <span className="mb-4 inline-block rotate-[-1deg] rounded-full border-2 border-gray-800 bg-[#FFE66D] px-4 py-2 text-base font-bold">
             VIDEO PACKAGES
           </span>
           <h2 className="font-display text-5xl font-bold text-gray-800">
@@ -20,7 +21,7 @@ export function PricingSection() {
             <span className="text-[#FF3333]">Upfront</span>
             {" Pricing"}
           </h2>
-          <p className="font-handwritten mx-auto mt-4 max-w-3xl text-lg text-gray-600">
+          <p className="mx-auto mt-4 max-w-3xl text-lg leading-relaxed text-gray-700 md:text-xl">
             Pick a package, pay securely online, and we’ll get started on your
             videos.
           </p>
@@ -52,7 +53,18 @@ export function PricingSection() {
                     ? `${formatUsd(perVideoCents(videoPackage))} per video`
                     : "One-time payment"}
                 </p>
-                <p className="mt-6 mb-8 flex-1 font-semibold text-gray-700">
+                <p className="mt-6 mb-8 flex flex-1 items-start gap-2 font-semibold text-gray-700">
+                  {videoPackage.turnaround ? (
+                    <Clock
+                      className="mt-1 h-5 w-5 shrink-0 text-[#FF3333]"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <Film
+                      className="mt-1 h-5 w-5 shrink-0 text-[#FF3333]"
+                      aria-hidden="true"
+                    />
+                  )}
                   {videoPackage.turnaround ??
                     `${videoPackage.videos} videos, paid upfront`}
                 </p>
@@ -69,7 +81,11 @@ export function PricingSection() {
               Custom
             </p>
             <p className="mt-2 text-gray-600">More than 10 videos</p>
-            <p className="mt-6 mb-8 flex-1 font-semibold text-gray-700">
+            <p className="mt-6 mb-8 flex flex-1 items-start gap-2 font-semibold text-gray-700">
+              <Users
+                className="mt-1 h-5 w-5 shrink-0 text-[#FF3333]"
+                aria-hidden="true"
+              />
               Talk to our team about volume pricing and delivery.
             </p>
             <a
@@ -81,7 +97,8 @@ export function PricingSection() {
           </article>
         </div>
 
-        <p className="mt-12 text-center text-sm text-gray-600">
+        <p className="mt-12 flex items-center justify-center gap-2 text-center text-base text-gray-600">
+          <Lock className="h-5 w-5 shrink-0" aria-hidden="true" />
           Secure checkout by Stripe. Invoices are issued by {PARENT_COMPANY},
           the parent company of Scribebunny.
         </p>

@@ -88,13 +88,13 @@ export default function ContactPage() {
         >
           <div className="relative mx-auto max-w-4xl px-6 sm:px-8">
             <div className="mb-10 text-center">
-              <span className="mb-4 inline-block rotate-[1deg] rounded-full border-2 border-gray-800 bg-[#FF6B6B] px-4 py-2 text-sm font-bold text-white">
+              <span className="mb-4 inline-block rotate-[1deg] rounded-full border-2 border-gray-800 bg-[#FF6B6B] px-4 py-2 text-base font-bold text-white">
                 STRATEGY CALL REQUEST
               </span>
               <h2 className="font-display text-5xl font-bold text-gray-800">
                 Request a Quote
               </h2>
-              <p className="font-handwritten mt-4 text-xl text-gray-700">
+              <p className="mt-4 text-xl leading-relaxed text-gray-700">
                 Tell us about your product, audience, and goals, and we’ll use
                 the details to guide the strategy call and next-step
                 recommendation.
@@ -123,7 +123,7 @@ export default function ContactPage() {
                 </address>
               </div>
             </div>
-            <p className="mt-6 text-center text-sm text-gray-700">
+            <p className="mt-6 text-center text-base text-gray-700">
               Scribebunny is a brand of {PARENT_COMPANY}.
             </p>
           </div>

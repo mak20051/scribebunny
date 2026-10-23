@@ -1,3 +1,10 @@
+import {
+  Pencil,
+  Rabbit,
+  Sparkles,
+  Target,
+  type LucideIcon,
+} from "lucide-react";
 import { FinalCta, PageDivider, type Faq } from "@/components/marketing";
 import { SiteShell } from "@/components/site-shell";
 import { VideoCard, type Video } from "@/components/video-card";
@@ -23,8 +30,8 @@ type ServicePageTemplateProps = {
   finalTitle: string;
   finalBody: string;
   finalSecondary: string;
-  topDoodle?: string;
-  sideDoodle?: string;
+  topDoodle?: LucideIcon;
+  sideDoodle?: LucideIcon;
   extraTop?: React.ReactNode;
   portfolioTitle?: string;
   portfolioDescription?: string;
@@ -44,8 +51,8 @@ export function ServicePageTemplate({
   finalTitle,
   finalBody,
   finalSecondary,
-  topDoodle = "✏️",
-  sideDoodle = "✨",
+  topDoodle: TopDoodle = Pencil,
+  sideDoodle: SideDoodle = Sparkles,
   extraTop,
   portfolioTitle = "Relevant portfolio samples",
   portfolioDescription = "Selected videos related to this service offering.",
@@ -55,30 +62,25 @@ export function ServicePageTemplate({
   return (
     <SiteShell>
       <main className="relative overflow-x-hidden bg-[linear-gradient(135deg,#FFF5F5_0%,#FFFFFF_50%,#FFF9F0_100%)] text-slate-800">
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute left-[6%] top-28 text-5xl opacity-12">
-            {topDoodle}
-          </div>
-          <div className="absolute right-[8%] top-56 text-4xl opacity-12">
-            {sideDoodle}
-          </div>
-          <div className="absolute left-[10%] top-[38%] text-3xl opacity-10">
-            🐰
-          </div>
-          <div className="absolute right-[12%] bottom-[24%] text-4xl opacity-10">
-            🎯
-          </div>
+        <div
+          className="pointer-events-none absolute inset-0 overflow-hidden"
+          aria-hidden="true"
+        >
+          <TopDoodle className="absolute left-[6%] top-28 h-14 w-14 opacity-15" />
+          <SideDoodle className="absolute right-[8%] top-56 h-12 w-12 opacity-15" />
+          <Rabbit className="absolute left-[10%] top-[38%] h-10 w-10 opacity-10" />
+          <Target className="absolute right-[12%] bottom-[24%] h-12 w-12 opacity-10" />
         </div>
 
         <section className="relative z-10 px-6 pt-32 pb-16 sm:px-8 lg:px-12">
           <div className="mx-auto max-w-4xl text-center">
-            <span className="mb-4 inline-block rotate-[-2deg] rounded-full border-2 border-gray-800 bg-[#FFE66D] px-4 py-2 text-sm font-bold">
+            <span className="mb-4 inline-block rotate-[-2deg] rounded-full border-2 border-gray-800 bg-[#FFE66D] px-4 py-2 text-base font-bold">
               {heroLabel}
             </span>
             <h1 className="font-display text-5xl font-bold leading-tight text-gray-800 md:text-6xl">
               {title}
             </h1>
-            <p className="font-handwritten mx-auto mt-6 max-w-3xl text-2xl text-gray-600">
+            <p className="mx-auto mt-6 max-w-3xl text-xl leading-relaxed text-gray-700 md:text-2xl">
               {description}
             </p>
             <div className="mt-10 flex flex-wrap justify-center gap-4">

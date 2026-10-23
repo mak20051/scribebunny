@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 
 export type Video = {
   id: string;
@@ -56,54 +57,57 @@ export function VideoCard({
           </div>
         </button>
         <div className="space-y-3 p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-700">
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-700">
             {video.category}
           </p>
           <h3 className="text-xl font-semibold tracking-tight text-slate-950">
             {video.title}
           </h3>
-          <p className="text-sm leading-7 text-slate-600">{video.summary}</p>
+          <p className="text-base leading-7 text-slate-600">{video.summary}</p>
         </div>
       </article>
 
-      {open ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/82 p-4 backdrop-blur-sm"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="relative w-full max-w-5xl overflow-hidden rounded-[2rem] border border-white/10 bg-black shadow-2xl">
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="absolute right-4 top-4 z-10 rounded-full border border-white/15 bg-black/60 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white backdrop-blur"
+      {open
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/82 p-4 backdrop-blur-sm"
+              role="dialog"
+              aria-modal="true"
             >
-              Close
-            </button>
-            <div className="aspect-video w-full">
-              <iframe
-                className="h-full w-full"
-                src={embedUrl}
-                title={video.title}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                referrerPolicy="strict-origin-when-cross-origin"
-                allowFullScreen
-              />
-            </div>
-            <div className="flex items-center justify-between gap-4 border-t border-white/10 bg-[#1b1524] px-5 py-4 text-sm text-slate-300">
-              <span>{video.title}</span>
-              <a
-                href={watchUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="font-semibold text-orange-300"
-              >
-                Open on YouTube →
-              </a>
-            </div>
-          </div>
-        </div>
-      ) : null}
+              <div className="relative w-full max-w-5xl overflow-hidden rounded-[2rem] border border-white/10 bg-black shadow-2xl">
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="absolute right-4 top-4 z-10 rounded-full border border-white/15 bg-black/60 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white backdrop-blur"
+                >
+                  Close
+                </button>
+                <div className="aspect-video w-full">
+                  <iframe
+                    className="h-full w-full"
+                    src={embedUrl}
+                    title={video.title}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    allowFullScreen
+                  />
+                </div>
+                <div className="flex items-center justify-between gap-4 border-t border-white/10 bg-[#1b1524] px-5 py-4 text-sm text-slate-300">
+                  <span>{video.title}</span>
+                  <a
+                    href={watchUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-semibold text-orange-300"
+                  >
+                    Open on YouTube →
+                  </a>
+                </div>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </>
   );
 }

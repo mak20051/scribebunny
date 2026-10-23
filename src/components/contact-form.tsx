@@ -16,7 +16,7 @@ function isValidEmail(email: string) {
 }
 
 export function ContactForm({
-  buttonLabel = "Send Message 🚀",
+  buttonLabel = "Send Message",
 }: {
   buttonLabel?: string;
 }) {
@@ -94,7 +94,7 @@ export function ContactForm({
         />
       </div>
       {emailError ? (
-        <p className="text-sm text-red-600 font-medium">{emailError}</p>
+        <p className="text-base font-medium text-red-600">{emailError}</p>
       ) : null}
       <div className="grid gap-4 md:grid-cols-2">
         <input
@@ -128,7 +128,7 @@ export function ContactForm({
         {sending ? "Sending..." : buttonLabel}
       </button>
       {sent ? (
-        <p className="text-sm font-semibold text-green-700">
+        <p className="text-base font-semibold text-green-700">
           Thanks — your details were sent successfully.
         </p>
       ) : null}

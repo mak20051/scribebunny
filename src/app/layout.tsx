@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Kalam, Outfit, Patrick_Hand, Space_Grotesk } from "next/font/google";
+import { Bricolage_Grotesque, Caveat, Outfit } from "next/font/google";
 import { FacebookPixel } from "@/components/facebook-pixel";
 import { GoogleAnalytics } from "@/components/google-analytics";
 import { LiveChat } from "@/components/live-chat";
@@ -12,21 +12,14 @@ const outfit = Outfit({
   subsets: ["latin"],
 });
 
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
+const bricolage = Bricolage_Grotesque({
+  variable: "--font-bricolage",
   subsets: ["latin"],
 });
 
-const kalam = Kalam({
-  variable: "--font-kalam",
+const caveat = Caveat({
+  variable: "--font-caveat",
   subsets: ["latin"],
-  weight: ["300", "400", "700"],
-});
-
-const patrickHand = Patrick_Hand({
-  variable: "--font-patrick-hand",
-  subsets: ["latin"],
-  weight: "400",
 });
 
 export const metadata: Metadata = {
@@ -54,7 +47,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${outfit.variable} ${spaceGrotesk.variable} ${kalam.variable} ${patrickHand.variable} bg-white font-sans antialiased`}
+        className={`${outfit.variable} ${bricolage.variable} ${caveat.variable} bg-white font-sans antialiased`}
       >
         <GoogleAnalytics />
         <FacebookPixel />

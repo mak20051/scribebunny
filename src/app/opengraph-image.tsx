@@ -13,7 +13,7 @@ const SUBHEAD = "For SaaS teams, startups, and agencies";
 async function loadDisplayFont(text: string) {
   try {
     const css = await fetch(
-      `https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&text=${encodeURIComponent(text)}`,
+      `https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@800&text=${encodeURIComponent(text)}`,
     ).then((response) => response.text());
     const fontUrl = css.match(/src: url\((.+?)\) format/)?.[1];
     if (!fontUrl) return null;
@@ -46,7 +46,7 @@ export default async function OpenGraphImage() {
           background:
             "linear-gradient(135deg, #FFF5F5 0%, #FFFFFF 50%, #FFF9F0 100%)",
           border: "12px solid #2D3748",
-          fontFamily: font ? "Space Grotesk" : undefined,
+          fontFamily: font ? "Bricolage Grotesque" : undefined,
           color: "#2D3748",
         }}
       >
@@ -57,7 +57,7 @@ export default async function OpenGraphImage() {
           alt=""
         />
         <div style={{ display: "flex", flexDirection: "column" }}>
-          <div style={{ fontSize: 76, fontWeight: 700, lineHeight: 1.05 }}>
+          <div style={{ fontSize: 76, fontWeight: 800, lineHeight: 1.05 }}>
             {HEADLINE}
           </div>
           <div style={{ fontSize: 40, marginTop: 20, color: "#4A5568" }}>
@@ -84,7 +84,7 @@ export default async function OpenGraphImage() {
     {
       ...size,
       fonts: font
-        ? [{ name: "Space Grotesk", data: font, weight: 700, style: "normal" }]
+        ? [{ name: "Bricolage Grotesque", data: font, weight: 800, style: "normal" }]
         : undefined,
     },
   );
