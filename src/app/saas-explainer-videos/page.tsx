@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { MonitorPlay, TrendingUp } from "lucide-react";
 import { JsonLd } from "@/components/json-ld";
 import type { Faq } from "@/components/marketing";
+import { serviceCostFaq } from "@/lib/faqs";
 import { breadcrumbSchema, faqSchema, pageMetadata } from "@/lib/seo";
 import { ServicePageTemplate } from "@/components/service-page-template";
 import { fullPortfolio } from "@/lib/portfolio";
@@ -22,6 +23,12 @@ const faqs: Faq[] = [
     answer:
       "Yes. A strong product narrative can support marketing, sales, partnerships, onboarding, and launch communication.",
   },
+  {
+    question: "How long does a SaaS explainer video take?",
+    answer:
+      "A single SaaS explainer video is delivered in 24 to 48 hours once we have your brief. For a series of 5 or 10 videos, we plan the delivery schedule with you around your launch.",
+  },
+  serviceCostFaq("SaaS explainer video"),
 ];
 export const metadata: Metadata = pageMetadata({
   title: "SaaS Explainer Videos for Launches and Sales | Scribebunny",

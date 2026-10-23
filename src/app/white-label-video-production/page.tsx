@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Handshake, Puzzle } from "lucide-react";
 import { JsonLd } from "@/components/json-ld";
 import type { Faq } from "@/components/marketing";
+import { serviceCostFaq } from "@/lib/faqs";
 import { breadcrumbSchema, faqSchema, pageMetadata } from "@/lib/seo";
 import { AgencyInquiryForm } from "@/components/agency-inquiry-form";
 import { ServicePageTemplate } from "@/components/service-page-template";
@@ -23,6 +24,12 @@ const faqs: Faq[] = [
     answer:
       "Freelancers can help in some cases, but agencies often need more consistency, clearer workflow, and a more dependable delivery model than ad hoc freelance support provides.",
   },
+  {
+    question: "How does pricing work for agencies?",
+    answer:
+      "Agencies can buy our 1, 5, or 10 video packages online, or talk to us about volume pricing for more than 10 videos. Every order gets its own private project portal, so each of your clients' videos stays organized.",
+  },
+  serviceCostFaq("white-label explainer video"),
 ];
 export const metadata: Metadata = pageMetadata({
   title: "White-Label Explainer Video Production | Scribebunny",

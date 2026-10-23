@@ -1,6 +1,3 @@
-import type { Faq } from "@/components/marketing";
-import { PARENT_COMPANY } from "@/lib/site";
-
 /**
  * Video packages: the single source of truth for prices and what each
  * package includes. Pages, FAQs, schema, llms.txt, checkout and order emails
@@ -131,35 +128,3 @@ export function packageSummary(videoPackage: VideoPackage) {
       : `1 video, ${VIDEO_SPEC.length}`;
   return `${length}. ${videoPackage.turnaround}. ${VIDEO_SPEC.revisions} per video.`;
 }
-
-const [singleVideo, ...multiVideoPackages] = videoPackages;
-const singleTurnaround = singleVideo.turnaround.replace(
-  /^Delivered/,
-  "delivered",
-);
-
-const bundlePrices = multiVideoPackages
-  .map(
-    (videoPackage) =>
-      `${videoPackage.videos} videos cost ${formatUsd(videoPackage.priceCents)}`,
-  )
-  .join(" and ");
-
-export const pricingFaqs: Faq[] = [
-  {
-    question: "How much does a video cost at Scribebunny?",
-    answer: `One video costs ${formatUsd(singleVideo.priceCents)} and is ${singleTurnaround}. ${bundlePrices}. For more than 10 videos, contact our team for bulk pricing.`,
-  },
-  {
-    question: "What is included in every video?",
-    answer: `Every video is ${VIDEO_SPEC.length} and includes ${EVERY_VIDEO_INCLUDES.map((item) => item.charAt(0).toLowerCase() + item.slice(1)).join(", ")}.`,
-  },
-  {
-    question: "How long does it take to get a video?",
-    answer: `A single video is ${singleTurnaround}. For 5 and 10 video packages, we plan the delivery schedule with you.`,
-  },
-  {
-    question: "How do I pay for a video package?",
-    answer: `Choose a package in the pricing section and pay online through secure Stripe checkout. Invoices are issued by ${PARENT_COMPANY}, the parent company of Scribebunny.`,
-  },
-];

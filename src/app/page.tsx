@@ -29,8 +29,9 @@ import { QuotePopupButton } from "@/components/quote-popup";
 import { SiteShell } from "@/components/site-shell";
 import { VideoCard } from "@/components/video-card";
 import { JsonLd } from "@/components/json-ld";
-import { SimpleFaq, type Faq } from "@/components/marketing";
-import { formatUsd, pricingFaqs, videoPackages } from "@/lib/packages";
+import { SimpleFaq } from "@/components/marketing";
+import { homeFaqs } from "@/lib/faqs";
+import { formatUsd, videoPackages } from "@/lib/packages";
 import { featuredPortfolio, latestWork } from "@/lib/portfolio";
 import { services } from "@/lib/services";
 import {
@@ -163,25 +164,7 @@ const studioValues = [
       initial: "A",
       accent: "bg-[#4ECDC4] text-white",
     },
-  ],
-  faqs = [
-    {
-      question: "What types of videos does Scribebunny create?",
-      answer:
-        "We create SaaS explainer videos, product demo videos, onboarding videos, feature explainers, and white-label agency video assets.",
-    },
-    {
-      question: "Who is Scribebunny best suited for?",
-      answer:
-        "We are best suited for SaaS teams, startups, and agencies that need clearer product communication and dependable video production.",
-    },
-    {
-      question: "Can you support ongoing video needs?",
-      answer:
-        "Yes. We can support one-off projects as well as recurring production needs for growing teams and agency partners.",
-    },
-    ...pricingFaqs,
-  ] satisfies Faq[];
+  ];
 function Doodles() {
   return (
     <div
@@ -267,7 +250,7 @@ export default function HomePage() {
       <JsonLd data={organizationSchema()} />
       <JsonLd data={websiteSchema()} />
       <JsonLd data={videoPackagesSchema()} />
-      <JsonLd data={faqSchema(faqs)} />
+      <JsonLd data={faqSchema(homeFaqs)} />
       <main className="relative overflow-x-hidden bg-[linear-gradient(135deg,#FFF5F5_0%,#FFFFFF_50%,#FFF9F0_100%)] text-slate-800">
         <Doodles />
         <section className="relative z-10 overflow-hidden px-6 pt-32 pb-20 sm:px-8 lg:px-12 lg:pt-36">
@@ -657,7 +640,7 @@ export default function HomePage() {
                 <span className="text-[#FF3333]">Questions</span>
               </h2>
             </div>
-            <SimpleFaq items={faqs} />
+            <SimpleFaq items={homeFaqs} />
           </div>
         </section>
         <SectionDivider />

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { GraduationCap, MousePointerClick } from "lucide-react";
 import { JsonLd } from "@/components/json-ld";
 import type { Faq } from "@/components/marketing";
+import { serviceCostFaq } from "@/lib/faqs";
 import { breadcrumbSchema, faqSchema, pageMetadata } from "@/lib/seo";
 import { ServicePageTemplate } from "@/components/service-page-template";
 import { fullPortfolio } from "@/lib/portfolio";
@@ -23,6 +24,12 @@ const faqs: Faq[] = [
     answer:
       "Yes. Product demo videos can help both prospects and customers understand workflows, features, and outcomes more efficiently.",
   },
+  {
+    question: "Can you make a full onboarding video series?",
+    answer:
+      "Yes. Our 5 and 10 video packages are made for series like onboarding flows and feature walkthroughs, with one consistent look across every video and a delivery schedule we plan with you.",
+  },
+  serviceCostFaq("product demo or onboarding video"),
 ];
 export const metadata: Metadata = pageMetadata({
   title: "Product Demo and Onboarding Videos for SaaS | Scribebunny",

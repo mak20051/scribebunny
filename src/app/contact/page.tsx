@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { JsonLd } from "@/components/json-ld";
+import type { Faq } from "@/components/marketing";
+import { costFaq } from "@/lib/faqs";
 import { breadcrumbSchema, faqSchema, pageMetadata } from "@/lib/seo";
 import { ContactForm } from "@/components/contact-form";
 import {
@@ -27,21 +29,32 @@ const callExpectations = [
     "You are an agency looking for white-label fulfillment",
     "You value clear communication and structured delivery",
   ],
-  faqs = [
+  faqs: Faq[] = [
     {
       question: "Do I need a full brief before reaching out?",
       answer:
-        "No. If you have a rough outline of your product, audience, and goal, that is enough to start the conversation.",
+        "No. A rough outline of your product, audience, and goal is plenty. We'll help you shape the story from there.",
     },
     {
-      question: "Can agencies inquire about recurring white-label support?",
+      question: "Can I order a video without a call?",
       answer:
-        "Yes. Agencies can use this page to start a conversation about project-based support or ongoing partnership models.",
+        "Yes. Pick a package in the pricing section and pay online. You'll get your private project portal straight away to send us your brief.",
+    },
+    {
+      question: "How quickly will you reply?",
+      answer:
+        "Within 24 hours. Every call request, quote request, and portal message is read by the small team that makes your video.",
+    },
+    costFaq,
+    {
+      question: "Can agencies ask about recurring white-label support?",
+      answer:
+        "Yes. Agencies can use this page to talk about project-based support or an ongoing partnership, and we can quote volume pricing for more than 10 videos.",
     },
     {
       question: "What happens after the call?",
       answer:
-        "If the project looks like a fit, the next step is usually a clearer scope, proposal, or recommended package based on your needs.",
+        "If it's a good fit, we recommend the right package, or a custom quote for larger projects, and you can order online whenever you're ready.",
     },
   ];
 export const metadata: Metadata = pageMetadata({
