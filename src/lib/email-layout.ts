@@ -156,11 +156,14 @@ export function alertEmail(opts: {
   title: string;
   fields: [string, string | undefined][];
   tone: AlertTone;
+  /** The main next step, shown as the first button. */
+  link?: { label: string; href: string };
 }) {
   const tone = TONE[opts.tone];
   const email = opts.fields.find(([k]) => k.toLowerCase() === "email")?.[1];
   const phone = opts.fields.find(([k]) => k.toLowerCase() === "phone")?.[1];
   const actions = [
+    opts.link && button(opts.link.label, opts.link.href),
     email && button(`Reply to ${email.split("@")[0]}`, `mailto:${email}`),
     phone &&
       `<a href="tel:${escapeHtml(phone.replace(/[^\d+]/g, ""))}" style="font-family:${BRAND.font};font-size:15px;color:${BRAND.ink};text-decoration:underline">Call ${escapeHtml(phone)}</a>`,

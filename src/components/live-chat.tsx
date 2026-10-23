@@ -1,10 +1,14 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 
 export function LiveChat() {
+  // The client portal has its own messages, so the chat widget stays out of it.
+  const hidden = usePathname().startsWith("/portal");
+
   useEffect(() => {
-    if (document.getElementById("tcx-callus-js")) return;
+    if (hidden || document.getElementById("tcx-callus-js")) return;
     const script = document.createElement("script");
     script.id = "tcx-callus-js";
     script.src =
@@ -12,7 +16,9 @@ export function LiveChat() {
     script.charset = "utf-8";
     script.defer = true;
     document.head.appendChild(script);
-  }, []);
+  }, [hidden]);
+
+  if (hidden) return null;
 
   return (
     <div

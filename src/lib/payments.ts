@@ -14,7 +14,8 @@ import {
   VIDEO_SPEC,
   type VideoPackage,
 } from "@/lib/packages";
-import { EMAIL, PARENT_COMPANY } from "@/lib/site";
+import { dashboardLink, openPortal, portalLink } from "@/lib/portal";
+import { PARENT_COMPANY } from "@/lib/site";
 
 /**
  * Payments: Stripe Checkout for the video packages.
@@ -206,6 +207,7 @@ export async function fulfil(sessionId: string) {
   const intent = await stripe().paymentIntents.retrieve(order.paymentId);
   if (intent.metadata?.fulfilled) return order;
 
+  await openPortal(order);
   await sendOrderAlert(order);
   await stripe()
     .paymentIntents.update(order.paymentId, {
@@ -247,8 +249,16 @@ async function sendOrderAlert(order: Order) {
   const fields = orderFields(order);
   await sendTeamEmail({
     subject: `💰 ${title}`,
-    html: alertEmail({ title, fields, tone: "paid" }),
-    text: alertText(title, fields),
+    html: alertEmail({
+      title,
+      fields: [...fields, ["All orders", dashboardLink()]],
+      tone: "paid",
+      link: {
+        label: "Open in the portal",
+        href: portalLink(order.reference, "team"),
+      },
+    }),
+    text: `${alertText(title, fields)}\n\nPortal: ${portalLink(order.reference, "team")}`,
     replyTo: order.email || undefined,
   });
 }
@@ -272,7 +282,7 @@ async function sendOrderConfirmation(order: Order) {
 <p>Thank you for your order! We're a small studio that loves to draw and tell stories, and we can't wait to start on yours.</p>
 ${summary}
 <p><strong>What happens next</strong></p>
-<p>1. Reply to this email with your brief: your website, what the video should explain, who it's for, and any brand files.<br>
+<p>1. Open your project portal and send us your brief: your website, what the video should explain, who it's for, and any brand files.<br>
 2. We write the script and sketch the storyboard.<br>
 3. We animate, voice, and deliver your video (${escapeHtml(delivery)}), with ${escapeHtml(VIDEO_SPEC.revisions)} to get it just right.</p>
 <p><strong>Every video includes</strong></p>
@@ -286,13 +296,15 @@ ${summary}
       eyebrow: `Payment received · ${order.amount}`,
       heading: "Your story is on our drawing board!",
       bodyHtml: body,
-      preheader: "Reply with your brief and we'll start sketching.",
+      preheader:
+        "Your project portal is ready. Send your brief and we'll start sketching.",
       button: {
-        label: "Send your brief",
-        href: `mailto:${EMAIL}?subject=${encodeURIComponent(`Brief for order ${order.reference}`)}`,
+        label: "Open your project portal",
+        href: portalLink(order.reference, "client"),
       },
-      afterButton: "Or simply reply to this email.",
+      afterButton:
+        "Bookmark it: your portal is where we chat, share drafts, and deliver your videos.",
     }),
-    text: `Hi ${order.name.split(" ")[0] || "there"},\n\nThank you for your order (${order.reference}): ${order.packageName}, ${order.amount}.\n\nReply to this email with your brief: your website, what the video should explain, who it's for, and any brand files. We'll write the script, sketch the storyboard, and deliver your video (${delivery}).\n\nThe Scribebunny studio`,
+    text: `Hi ${order.name.split(" ")[0] || "there"},\n\nThank you for your order (${order.reference}): ${order.packageName}, ${order.amount}.\n\nOpen your project portal to send your brief: ${portalLink(order.reference, "client")}\n\nWe'll write the script, sketch the storyboard, and deliver your video (${delivery}).\n\nThe Scribebunny studio`,
   });
 }

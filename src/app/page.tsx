@@ -301,8 +301,8 @@ export default function HomePage() {
                 </span>
               </h1>
               <p className="mx-auto mt-8 max-w-2xl text-xl leading-relaxed text-gray-700 md:text-2xl lg:mx-0">
-                We&apos;re a small studio that loves to draw and tell stories. We
-                turn complex products into clear whiteboard and 2D explainer
+                We&apos;re a small studio that loves to draw and tell stories.
+                We turn complex products into clear whiteboard and 2D explainer
                 videos for SaaS brands, startups, and agencies.
               </p>
               <div className="mt-10 flex flex-col items-center gap-5 sm:flex-row sm:justify-center lg:justify-start">

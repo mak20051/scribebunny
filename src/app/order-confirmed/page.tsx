@@ -4,6 +4,7 @@ import Link from "next/link";
 import { IconTile } from "@/components/icon-tile";
 import { SiteShell } from "@/components/site-shell";
 import { VIDEO_SPEC } from "@/lib/packages";
+import { portalLink } from "@/lib/portal";
 import {
   describeOrder,
   fulfil,
@@ -37,7 +38,7 @@ const NEXT_STEPS = [
   {
     icon: Mail,
     title: "Send us your brief",
-    text: "Reply to your confirmation email with your website, what the video should explain, who it's for, and any brand files.",
+    text: "Open your project portal and tell us your website, what the video should explain, who it's for, and any brand files.",
   },
   {
     icon: PenTool,
@@ -55,9 +56,9 @@ export default async function OrderConfirmedPage({ searchParams }: Props) {
   const { session_id: sessionId } = await searchParams;
   const order = await loadOrder(sessionId);
   const paid = order?.paid ?? false;
-  const briefHref = `mailto:${EMAIL}?subject=${encodeURIComponent(
-    order ? `Brief for order ${order.reference}` : "Brief for my video",
-  )}`;
+  const portalHref = order?.paid
+    ? portalLink(order.reference, "client")
+    : `mailto:${EMAIL}?subject=${encodeURIComponent("Brief for my video")}`;
 
   return (
     <SiteShell>
@@ -125,8 +126,8 @@ export default async function OrderConfirmedPage({ searchParams }: Props) {
         </div>
 
         <div className="mt-14 flex flex-wrap justify-center gap-4">
-          <a href={briefHref} className="btn-primary text-lg">
-            Send Your Brief
+          <a href={portalHref} className="btn-primary text-lg">
+            {order?.paid ? "Open Your Project Portal" : "Send Your Brief"}
           </a>
           <a
             href={CALENDLY_URL}
