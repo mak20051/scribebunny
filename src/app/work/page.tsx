@@ -11,7 +11,7 @@ import {
 import { SiteShell } from "@/components/site-shell";
 import { PortfolioGallery } from "@/components/portfolio-gallery";
 import { VideoCard } from "@/components/video-card";
-import { fullPortfolio } from "@/lib/portfolio";
+import { fullPortfolio, latestWork } from "@/lib/portfolio";
 
 const caseStudies = [
     {
@@ -79,6 +79,18 @@ export default function WorkPage() {
           secondaryCta="Request a Quote"
           secondaryHref="/contact#contact-form"
         />
+        <PageDivider />
+        <MarketingSection
+          label="Just released"
+          title="New from the studio"
+          description="The latest stories we've drawn and animated for our clients."
+        >
+          <div className="grid gap-8 md:grid-cols-2">
+            {latestWork.map((video, index) => (
+              <VideoCard key={video.id} video={video} priority={index < 2} />
+            ))}
+          </div>
+        </MarketingSection>
         <PageDivider />
         <MarketingSection
           label="Intro"

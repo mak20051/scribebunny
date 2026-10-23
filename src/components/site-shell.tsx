@@ -9,6 +9,7 @@ import {
   PARENT_COMPANY,
   PHONE_DISPLAY,
   PHONE_HREF,
+  TAGLINE,
 } from "@/lib/site";
 
 const navItems = [
@@ -76,8 +77,8 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
                 <Logo small />
               </Link>
               <p className="mb-4 text-base leading-relaxed text-gray-600">
-                Strategy-led explainer, demo, onboarding, and white-label video
-                production for SaaS brands, startups, and agencies.
+                {TAGLINE} Whiteboard and 2D explainer, demo, onboarding, and
+                white-label videos for SaaS brands, startups, and agencies.
               </p>
             </div>
 

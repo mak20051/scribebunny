@@ -2,12 +2,15 @@ import Link from "next/link";
 import {
   AppWindow,
   ArrowRight,
+  BookOpen,
   CircleCheck,
   Clapperboard,
   Clock,
+  Heart,
   Lightbulb,
   Palette,
   Pencil,
+  PenTool,
   Play,
   Rabbit,
   Rocket,
@@ -28,7 +31,7 @@ import { VideoCard } from "@/components/video-card";
 import { JsonLd } from "@/components/json-ld";
 import { SimpleFaq, type Faq } from "@/components/marketing";
 import { formatUsd, pricingFaqs, videoPackages } from "@/lib/packages";
-import { featuredPortfolio } from "@/lib/portfolio";
+import { featuredPortfolio, latestWork } from "@/lib/portfolio";
 import { services } from "@/lib/services";
 import {
   faqSchema,
@@ -38,11 +41,36 @@ import {
 } from "@/lib/seo";
 import { CALENDLY_URL } from "@/lib/site";
 
+const homeWork = [...latestWork, ...featuredPortfolio.slice(0, 2)];
+
 const startingPrice = formatUsd(
   Math.min(...videoPackages.map((videoPackage) => videoPackage.priceCents)),
 );
 
-const audiences = [
+const studioValues = [
+    {
+      title: "We love to draw",
+      description:
+        "Every frame starts as a sketch, from hand-drawn whiteboard stories to colorful 2D illustration.",
+      icon: PenTool,
+      tone: "yellow" as const,
+    },
+    {
+      title: "We tell stories",
+      description:
+        "We find the story inside your product, so viewers remember it instead of just watching it.",
+      icon: BookOpen,
+      tone: "coral" as const,
+    },
+    {
+      title: "Small studio, close collaboration",
+      description:
+        "You work closely with the small team that writes, draws, and animates your video.",
+      icon: Heart,
+      tone: "teal" as const,
+    },
+  ],
+  audiences = [
     {
       title: "SaaS Teams",
       description:
@@ -72,50 +100,6 @@ const audiences = [
     "Reduce friction in onboarding and customer education",
     "Give sales and marketing teams reusable video assets",
     "Deliver client work more reliably through white-label support",
-  ],
-  caseStudies = [
-    {
-      id: featuredPortfolio[0].id,
-      category: "SaaS Explainers",
-      title: "B2B Product Explainer",
-      summary:
-        "Explainer video designed to clarify product value and support first-time understanding.",
-    },
-    {
-      id: featuredPortfolio[1].id,
-      category: "SaaS Explainers",
-      title: "Platform Explainer Video",
-      summary:
-        "Product story video built to help visitors understand the offer quickly and clearly.",
-    },
-    {
-      id: featuredPortfolio[2].id,
-      category: "Product Demos & Onboarding",
-      title: "Product Education Video",
-      summary:
-        "Education-focused video designed to help viewers understand the product or process more clearly.",
-    },
-    {
-      id: featuredPortfolio[3].id,
-      category: "Product Demos & Onboarding",
-      title: "Guided Explainer with Subtitles",
-      summary:
-        "A structured explainer format suitable for onboarding, education, and support-ready delivery.",
-    },
-    {
-      id: featuredPortfolio[4].id,
-      category: "White-Label / Agency Work",
-      title: "Service Business Explainer",
-      summary:
-        "A strong example of client delivery work for a service-based business.",
-    },
-    {
-      id: featuredPortfolio[5].id,
-      category: "White-Label / Agency Work",
-      title: "White-Label Delivery Example",
-      summary:
-        "A polished explainer suitable for demonstrating agency-ready production support.",
-    },
   ],
   processSteps = [
     {
@@ -317,9 +301,9 @@ export default function HomePage() {
                 </span>
               </h1>
               <p className="mx-auto mt-8 max-w-2xl text-xl leading-relaxed text-gray-700 md:text-2xl lg:mx-0">
-                Clear explainer, demo, and onboarding videos that help SaaS
-                brands, startups, and agencies simplify complex products for
-                launches, sales, and onboarding.
+                We&apos;re a small studio that loves to draw and tell stories. We
+                turn complex products into clear whiteboard and 2D explainer
+                videos for SaaS brands, startups, and agencies.
               </p>
               <div className="mt-10 flex flex-col items-center gap-5 sm:flex-row sm:justify-center lg:justify-start">
                 <CheckoutButton
@@ -374,8 +358,40 @@ export default function HomePage() {
               </div>
               <HeroVideo />
               <p className="font-handwritten mt-6 text-center text-2xl text-gray-700">
-                Explainers, demos, onboarding, and white-label production
+                Every video starts with a story and a sketch.
               </p>
+            </div>
+          </div>
+        </section>
+        <SectionDivider />
+        <section id="studio" className="relative z-10 py-20">
+          <div className="mx-auto max-w-6xl px-6 sm:px-8 lg:px-12">
+            <div className="mb-14 text-center">
+              <span className="mb-4 inline-block rotate-[-2deg] rounded-full border-2 border-gray-800 bg-[#4ECDC4] px-4 py-2 text-base font-bold">
+                MEET THE STUDIO
+              </span>
+              <h2 className="font-display text-5xl font-bold text-gray-800">
+                {"A small studio that loves to "}
+                <span className="text-[#FF3333]">draw</span>
+                {" and tell "}
+                <span className="text-[#FF3333]">stories</span>
+              </h2>
+              <p className="mx-auto mt-4 max-w-3xl text-lg leading-relaxed text-gray-700 md:text-xl">
+                Scribebunny is a small animation studio of illustrators and
+                storytellers. We find the story in your product, sketch it frame
+                by frame, and bring it to life.
+              </p>
+            </div>
+            <div className="grid gap-8 md:grid-cols-3">
+              {studioValues.map((value) => (
+                <article key={value.title} className="service-card">
+                  <IconTile icon={value.icon} tone={value.tone} />
+                  <h3 className="mb-3 text-2xl font-bold text-gray-800">
+                    {value.title}
+                  </h3>
+                  <p className="text-gray-700">{value.description}</p>
+                </article>
+              ))}
             </div>
           </div>
         </section>
@@ -494,17 +510,13 @@ export default function HomePage() {
                 <span className="text-[#FF3333]">Projects</span>
               </h2>
               <p className="mx-auto mt-4 max-w-3xl text-lg leading-relaxed text-gray-700 md:text-xl">
-                A closer look at the types of videos we create to support
-                product clarity, launches, onboarding, and conversion.
+                Our newest videos, fresh off the drawing board, plus a few
+                favorites from the archive.
               </p>
             </div>
             <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-              {caseStudies.map((caseStudy, index) => (
-                <VideoCard
-                  key={caseStudy.id}
-                  video={caseStudy}
-                  priority={index < 2}
-                />
+              {homeWork.map((video, index) => (
+                <VideoCard key={video.id} video={video} priority={index < 2} />
               ))}
             </div>
             <div className="mt-12 text-center">

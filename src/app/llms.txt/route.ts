@@ -1,5 +1,7 @@
 import {
+  EVERY_VIDEO_INCLUDES,
   formatUsd,
+  packageSummary,
   perVideoCents,
   savingsCents,
   videoPackages,
@@ -17,21 +19,25 @@ import {
 export const dynamic = "force-static";
 
 function packageLine(videoPackage: (typeof videoPackages)[number]) {
-  const details =
-    videoPackage.turnaround?.toLowerCase() ??
-    `${formatUsd(perVideoCents(videoPackage))} per video, save ${formatUsd(savingsCents(videoPackage))}`;
-  return `- ${videoPackage.name}: ${formatUsd(videoPackage.priceCents)} (${details})`;
+  const savings = savingsCents(videoPackage);
+  const pricing =
+    savings > 0
+      ? ` (${formatUsd(perVideoCents(videoPackage))} per video, save ${formatUsd(savings)})`
+      : "";
+  return `- ${videoPackage.name}: ${formatUsd(videoPackage.priceCents)}${pricing}. ${packageSummary(videoPackage)}`;
 }
 
 export function GET() {
   const body = `# Scribebunny
 
-> Scribebunny creates explainer, product demo, onboarding, and white-label video content for SaaS brands, startups, and agencies. Scribebunny is a brand of ${PARENT_COMPANY}.
+> Scribebunny is a small animation studio that loves to draw and tell stories. We create whiteboard and 2D explainer, product demo, onboarding, and white-label videos for SaaS brands, startups, and agencies. Scribebunny is a brand of ${PARENT_COMPANY}.
 
 ## Video packages
 
 ${videoPackages.map(packageLine).join("\n")}
 - Bulk (more than 10 videos): custom pricing, contact the team at ${SITE_URL}/contact
+
+Every video includes: ${EVERY_VIDEO_INCLUDES.join("; ")}.
 
 Buy online through secure Stripe checkout at ${SITE_URL}/#pricing. Invoices are issued by ${PARENT_COMPANY}.
 

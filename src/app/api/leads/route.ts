@@ -1,5 +1,6 @@
-import nodemailer from "nodemailer";
 import { NextResponse } from "next/server";
+import { sendTeamEmail } from "@/lib/email";
+import { alertEmail, alertText } from "@/lib/email-layout";
 
 type LeadPayload = {
   type: string;
@@ -8,35 +9,27 @@ type LeadPayload = {
   transcript?: string[];
 };
 
-const LEAD_RECIPIENTS = "mehroz@aimviz.com, sohail.ahmed@aimviz.com";
 const CRM_FORM_URL =
   "https://aimviz-nextjs.vercel.app/api/crm/forms/3f2fff02e86860bc5bc23fc318ebc9a62f0abb58eadea70b9c11daf94267a46c/submit";
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT || 465),
-  secure: String(process.env.SMTP_SECURE || "true") === "true",
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
-
 async function sendLeadEmail(lead: LeadPayload) {
-  const from = process.env.LEAD_FROM_EMAIL || process.env.SMTP_USER;
-  const fieldLines = Object.entries(lead.fields)
-    .map(([key, value]) => `${key}: ${value || ""}`)
-    .join("\n");
-  const transcript = lead.transcript?.length
-    ? `\n\nChat transcript:\n${lead.transcript.map((line) => `- ${line}`).join("\n")}`
-    : "";
-  const text = `Lead type: ${lead.type}\n\n${fieldLines}${transcript}`;
-
-  await transporter.sendMail({
-    from,
-    to: LEAD_RECIPIENTS,
+  const fields: [string, string | undefined][] = [
+    ["Lead type", lead.type],
+    ...Object.entries(lead.fields),
+    ...(lead.transcript?.length
+      ? [
+          [
+            "Chat transcript",
+            lead.transcript.map((line) => `- ${line}`).join("\n"),
+          ] as [string, string],
+        ]
+      : []),
+  ];
+  await sendTeamEmail({
     subject: `Website Lead from SB!! ${lead.subject}`,
-    text,
+    html: alertEmail({ title: lead.subject, fields, tone: "lead" }),
+    text: alertText(lead.subject, fields),
+    replyTo: lead.fields.Email || undefined,
   });
 }
 

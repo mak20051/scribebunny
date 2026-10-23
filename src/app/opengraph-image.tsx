@@ -84,7 +84,14 @@ export default async function OpenGraphImage() {
     {
       ...size,
       fonts: font
-        ? [{ name: "Bricolage Grotesque", data: font, weight: 800, style: "normal" }]
+        ? [
+            {
+              name: "Bricolage Grotesque",
+              data: font,
+              weight: 800,
+              style: "normal",
+            },
+          ]
         : undefined,
     },
   );

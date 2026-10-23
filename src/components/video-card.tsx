@@ -8,6 +8,7 @@ export type Video = {
   title: string;
   category: string;
   summary: string;
+  isNew?: boolean;
 };
 
 export function VideoCard({
@@ -37,7 +38,7 @@ export function VideoCard({
           />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(17,24,39,0.1)_0%,rgba(17,24,39,0.18)_40%,rgba(15,23,42,0.78)_100%)]" />
           <div className="absolute left-4 top-4 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-white backdrop-blur sm:left-5 sm:top-5">
-            {priority ? "Featured" : "Watch sample"}
+            {video.isNew ? "New" : priority ? "Featured" : "Watch sample"}
           </div>
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[linear-gradient(135deg,_#ffb060,_#ff7a59)] text-white shadow-lg shadow-orange-900/30 transition group-hover:scale-105">

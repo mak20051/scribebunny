@@ -14,7 +14,7 @@
     "nodemailer": "^7",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "stripe": "^23.0.1"
+    "stripe": "^22.6.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

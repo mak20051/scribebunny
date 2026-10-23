@@ -77,7 +77,7 @@ export function organizationSchema() {
     url: SITE_URL,
     logo: `${SITE_URL}/brand/scribebunny-logo-uploaded.png`,
     description:
-      "Scribebunny helps SaaS brands, startups, and agencies simplify complex products with explainer, demo, onboarding, and white-label video production.",
+      "Scribebunny is a small animation studio that loves to draw and tell stories, making whiteboard and 2D explainer, demo, onboarding, and white-label videos for SaaS brands, startups, and agencies.",
     email: EMAIL,
     telephone: PHONE_DISPLAY,
     address: {

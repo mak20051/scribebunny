@@ -1,5 +1,41 @@
 import type { Video } from "@/components/video-card";
 
+/** Newest client videos, shown first on the home page and the work page. */
+export const latestWork: Video[] = [
+  {
+    id: "S5vdBu8gJUg",
+    title: "Rebalance Health",
+    category: "2D Animation",
+    summary:
+      "A 2D animated brand video introducing Rebalance Health and its approach to hormone balance and better sleep.",
+    isNew: true,
+  },
+  {
+    id: "7wBxpHdds7w",
+    title: "Regional Towing",
+    category: "Whiteboard",
+    summary:
+      "A hand-drawn whiteboard explainer for a towing company, told through a roadside breakdown story.",
+    isNew: true,
+  },
+  {
+    id: "S_lYvFoj1h0",
+    title: "Mermaid Car Wash",
+    category: "2D Animation",
+    summary:
+      "A 2D animated promo showing the car care services at Mermaid Car Wash.",
+    isNew: true,
+  },
+  {
+    id: "NyznFjkCJjA",
+    title: "Vanderbilt Insurance",
+    category: "Whiteboard",
+    summary:
+      "A hand-drawn whiteboard explainer that walks viewers through Vanderbilt Insurance step by step.",
+    isNew: true,
+  },
+];
+
 export const featuredPortfolio: Video[] = [
   {
     id: "mIoX7bjn6x4",
@@ -46,6 +82,7 @@ export const featuredPortfolio: Video[] = [
 ];
 
 export const fullPortfolio: Video[] = [
+  ...latestWork,
   {
     id: "mIoX7bjn6x4",
     title: "B2B Product Explainer",

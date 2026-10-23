@@ -25,19 +25,26 @@ page for page at the time of the rebuild.
 - `src/components/marketing.tsx`: hero, section, FAQ and CTA blocks
 - `src/lib/portfolio.ts`: portfolio videos (YouTube IDs)
 - `src/lib/site.ts`: site URL, Calendly link, contact details, parent company
-- `src/lib/packages.ts`: video package prices (the only place prices live)
+- `src/lib/packages.ts`: video package prices and inclusions (the only place they live)
 - `src/components/pricing-section.tsx`: home page `#pricing` section
-- `src/app/api/checkout/route.ts`: creates Stripe Checkout sessions (with invoices)
+- `src/lib/payments.ts`: Stripe Checkout, idempotent order fulfilment
+- `src/lib/email.ts`, `src/lib/email-layout.ts`: SMTP sending and the branded email layouts
+- `src/app/api/checkout/route.ts`: starts checkout; `src/app/api/stripe/webhook/route.ts`: fulfils paid orders
+- `src/app/order-confirmed/page.tsx`: order summary (fulfils the order when no webhook is set)
 - `src/app/api/leads/route.ts`: emails form leads and forwards them to the aimviz CRM
 
 ## Business details
-Scribebunny is a brand of Infinisys LLC. All invoices are issued by Infinisys
+Scribebunny is a small animation studio that loves to draw and tell stories;
+write copy in that voice. Scribebunny is a brand of Infinisys LLC. All invoices are issued by Infinisys
 LLC, so the Stripe account behind `STRIPE_SECRET_KEY` must be Infinisys LLC's.
 
 ## Environment
-Vercel env vars: `STRIPE_SECRET_KEY` (Production and Preview), plus SMTP
-settings (Production): `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`,
-`SMTP_PASS`, `LEAD_FROM_EMAIL`, `LEAD_TO_EMAIL`. Never commit `.env*` files.
+Vercel env vars: `STRIPE_SECRET_KEY`, optional `STRIPE_WEBHOOK_SECRET`
+(endpoint `/api/stripe/webhook`, event `checkout.session.completed`), plus
+SMTP settings: `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`,
+`SMTP_PASS`, `LEAD_FROM_EMAIL`. Lead and order alerts go to `TEAM_EMAILS` in
+`src/lib/site.ts`. Locally, without SMTP, emails are logged and written to
+`EMAIL_PREVIEW_DIR` if set. Never commit `.env*` files.
 
 ## Deploys
 Pushing to `main` deploys to production. Use a branch for changes you want to
