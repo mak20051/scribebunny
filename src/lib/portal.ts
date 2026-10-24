@@ -1,4 +1,3 @@
-import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { sendCustomerEmail, sendTeamEmail } from "@/lib/email";
 import {
   alertEmail,
@@ -8,6 +7,7 @@ import {
 } from "@/lib/email-layout";
 import { VIDEO_SPEC } from "@/lib/packages";
 import type { Order } from "@/lib/payments";
+import { isAdminKey, keyMatches, sign } from "@/lib/signing";
 import { SITE_URL } from "@/lib/site";
 import { listPaths, readJson, updateJson, writeJson } from "@/lib/store";
 
@@ -72,42 +72,12 @@ export type PortalMessage = {
 
 const STUDIO_AUTHOR = "Scribebunny studio";
 
-function secret(): Buffer {
-  const base =
-    process.env.PORTAL_SECRET ||
-    process.env.STRIPE_SECRET_KEY ||
-    process.env.SMTP_PASS;
-  if (!base) {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error("No secret available to sign portal links");
-    }
-    return createHash("sha256").update("sb-portal-v1|local-dev-only").digest();
-  }
-  return createHash("sha256").update(`sb-portal-v1|${base}`).digest();
-}
-
-function sign(subject: string) {
-  return createHmac("sha256", secret())
-    .update(subject)
-    .digest("base64url")
-    .slice(0, 32);
-}
-
-function matches(key: string | undefined, subject: string) {
-  if (!key) return false;
-  const expected = Buffer.from(sign(subject));
-  const given = Buffer.from(key);
-  return given.length === expected.length && timingSafeEqual(given, expected);
-}
-
 /** Which role a key grants for this order, if any. The admin key opens every order as the team. */
 export function roleFor(ref: string, key?: string): Role | null {
-  if (matches(key, `team|${ref}`) || matches(key, "admin")) return "team";
-  if (matches(key, `client|${ref}`)) return "client";
+  if (keyMatches(key, `team|${ref}`) || isAdminKey(key)) return "team";
+  if (keyMatches(key, `client|${ref}`)) return "client";
   return null;
 }
-
-export const isAdminKey = (key?: string) => matches(key, "admin");
 
 export const portalLink = (ref: string, role: Role) =>
   `${SITE_URL}/portal/${ref}?k=${sign(`${role}|${ref}`)}`;

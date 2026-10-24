@@ -17,6 +17,7 @@ const navItems = [
   { href: "/work", label: "Our Work" },
   { href: "/#process", label: "Process" },
   { href: "/#pricing", label: "Pricing" },
+  { href: "/free-concepts", label: "Free Concepts" },
 ];
 
 function Logo({ small = false }: { small?: boolean }) {

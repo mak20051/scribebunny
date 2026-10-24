@@ -41,6 +41,8 @@ Every video includes: ${EVERY_VIDEO_INCLUDES.join("; ")}.
 
 Buy online through secure Stripe checkout at ${SITE_URL}/#pricing. Invoices are issued by ${PARENT_COMPANY}.
 
+Free offer: 3 video concepts researched from your own website and reviewed by our storytellers, delivered by email within 24 hours: ${SITE_URL}/free-concepts
+
 ## Services
 
 ${services.map((service) => `- [${service.title}](${SITE_URL}${service.href}): ${service.description}`).join("\n")}

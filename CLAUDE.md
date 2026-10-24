@@ -34,6 +34,8 @@ page for page at the time of the rebuild.
 - `src/lib/portal.ts`, `src/app/portal/`: client portal (messages, video status, delivery
   links, mark complete) with signed links; `src/lib/store.ts`: private Vercel Blob store
 - `src/app/api/leads/route.ts`: emails form leads and forwards them to the aimviz CRM
+- `src/lib/concepts.ts`, `src/app/free-concepts/`, `src/app/concepts/`: free 3-concept offer
+  (website research in `src/lib/research.ts`, DeepSeek drafting, studio review, send)
 
 ## Client portal
 Every paid order opens a portal. The confirmation email carries the client link,
@@ -43,6 +45,15 @@ are HMAC-signed with `PORTAL_SECRET` (falls back to a key derived from
 private Vercel Blob store `scribebunny-portal` (`BLOB_READ_WRITE_TOKEN`, Production
 and Preview), one JSON file per order at `portal/orders/<ref>.json`, updated with
 ETag compare-and-swap. Without the token the store is in-memory (local runs only).
+
+## Free concepts
+Prospects ask for 3 free concepts at `/free-concepts`. The team gets an alert and
+the prospect an acknowledgement; in the background the site reads their website
+(public hosts only) and DeepSeek (`deepseek-flash`, `DEEPSEEK_API_KEY`, optional
+`DEEPSEEK_MODEL`) drafts 3 concepts. The studio reviews and edits them at the
+signed `/concepts/<id>` link, then sends the branded concepts email. Concepts are
+never sent without a person clicking Send. Without the API key the team writes
+them by hand on the same page.
 
 ## Business details
 Scribebunny is a small animation studio that loves to draw and tell stories;

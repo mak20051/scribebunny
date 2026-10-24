@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { LocalTime } from "@/components/local-time";
 import { PortalShell } from "@/components/portal-shell";
-import { isAdminKey, listPortalOrders } from "@/lib/portal";
+import { listConceptRequests } from "@/lib/concepts";
+import { listPortalOrders } from "@/lib/portal";
+import { isAdminKey } from "@/lib/signing";
 
 export const metadata: Metadata = {
   title: "Orders | Scribebunny Studio",
@@ -25,7 +27,10 @@ export default async function PortalDashboardPage({ searchParams }: Props) {
     );
   }
 
-  const orders = await listPortalOrders();
+  const [orders, conceptRequests] = await Promise.all([
+    listPortalOrders(),
+    listConceptRequests(),
+  ]);
   const open = orders.filter((order) => order.status === "active");
   const done = orders.filter((order) => order.status === "complete");
 
@@ -80,6 +85,56 @@ export default async function PortalDashboardPage({ searchParams }: Props) {
         </ul>
       ) : (
         <p className="mt-8 text-lg text-gray-600">No orders yet.</p>
+      )}
+
+      <h2 className="font-display mt-16 text-3xl font-bold text-gray-800">
+        Free concept requests
+      </h2>
+      {conceptRequests.length ? (
+        <ul className="mt-6 space-y-4">
+          {conceptRequests.map((request) => (
+            <li key={request.id}>
+              <Link
+                href={`/concepts/${request.id}?k=${encodeURIComponent(k)}`}
+                className="service-card block p-5 sm:p-6"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-bold tracking-widest text-[#FF3333] uppercase">
+                      {request.id}
+                    </p>
+                    <p className="mt-1 text-xl font-bold text-gray-800">
+                      {request.lead.name}
+                    </p>
+                    <p className="text-base text-gray-600">
+                      {request.lead.website || request.lead.email} ·{" "}
+                      <LocalTime iso={request.createdAt} />
+                    </p>
+                  </div>
+                  <span
+                    className={`rounded-full border-2 border-gray-800 px-3 py-1 text-sm font-bold ${
+                      request.status === "sent"
+                        ? "bg-green-600 text-white"
+                        : request.status === "failed"
+                          ? "bg-[#FF6B6B] text-white"
+                          : "bg-[#FFE66D] text-gray-800"
+                    }`}
+                  >
+                    {request.status === "sent"
+                      ? "Sent"
+                      : request.status === "review"
+                        ? "Ready to review"
+                        : request.status === "failed"
+                          ? "Needs writing"
+                          : "Drafting"}
+                  </span>
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-6 text-lg text-gray-600">No concept requests yet.</p>
       )}
     </PortalShell>
   );

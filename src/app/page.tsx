@@ -22,6 +22,7 @@ import {
   Zap,
 } from "lucide-react";
 import { CheckoutButton } from "@/components/checkout-button";
+import { ConceptOffer } from "@/components/concept-offer";
 import { IconTile } from "@/components/icon-tile";
 import { HeroVideo } from "@/components/hero-video";
 import { PricingSection } from "@/components/pricing-section";
@@ -310,6 +311,15 @@ export default function HomePage() {
                 See 5 and 10 video packages
                 <ArrowRight className="h-5 w-5" aria-hidden="true" />
               </a>
+              <p className="mt-2 text-lg text-gray-700">
+                {"Not ready yet? "}
+                <Link
+                  href="/free-concepts"
+                  className="font-bold text-[#FF3333] hover:underline"
+                >
+                  Get 3 free video concepts
+                </Link>
+              </p>
               <ul className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-3 text-base font-semibold text-gray-700 lg:justify-start">
                 <li className="flex items-center gap-2">
                   <ShieldCheck
@@ -560,6 +570,7 @@ export default function HomePage() {
         </section>
         <SectionDivider />
         <PricingSection />
+        <ConceptOffer />
         <SectionDivider />
         <section className="relative z-10 py-20">
           <div className="mx-auto max-w-4xl px-6 text-center sm:px-8 lg:px-12">
