@@ -38,3 +38,6 @@ export function keyMatches(key: string | undefined, subject: string) {
 
 /** The studio's master key: opens every order and concept request as the team. */
 export const isAdminKey = (key?: string) => keyMatches(key, "admin");
+
+/** The owner's key: opens the growth board. The admin key does not. */
+export const isGrowthKey = (key?: string) => keyMatches(key, "growth");

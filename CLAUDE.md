@@ -58,8 +58,10 @@ never sent without a person clicking Send. Without the API key the team writes
 them by hand on the same page.
 
 ## Growth board
-`/portal/growth` (the "Growth board" button on the studio dashboard, same admin
-link) shows live numbers from the site's own records: enquiries (form leads at
+`/portal/growth` is the owner's only. It opens with its own signed "growth" key
+(the team's admin link does not open it), which is emailed only to `OWNER_EMAIL`
+in `src/lib/site.ts`: press "Email the owner's link" on the locked page (at most
+one email every 10 minutes). It shows live numbers from the site's own records: enquiries (form leads at
 `portal/leads/<id>.json` plus concept requests), concepts sent, paid orders,
 revenue (`amountCents` on each order), conversion rates, revenue by package, the
 last 8 weeks and recent activity. Only leads sent after this shipped are counted.

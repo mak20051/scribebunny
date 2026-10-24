@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import nodemailer from "nodemailer";
-import { EMAIL, TEAM_EMAILS } from "@/lib/site";
+import { EMAIL, OWNER_EMAIL, TEAM_EMAILS } from "@/lib/site";
 
 /**
  * Sending email. SMTP settings come from env vars (SMTP_HOST, SMTP_PORT,
@@ -55,6 +55,11 @@ async function send(message: Message) {
 /** To the team (TEAM_EMAILS); replies go to the customer when we know them. */
 export function sendTeamEmail(message: Omit<Message, "to">) {
   return send({ ...message, to: TEAM_EMAILS });
+}
+
+/** To the owner only (OWNER_EMAIL), for things the team doesn't see. */
+export function sendOwnerEmail(message: Omit<Message, "to">) {
+  return send({ ...message, to: [OWNER_EMAIL] });
 }
 
 /** To a customer; replies come back to the studio inbox. */

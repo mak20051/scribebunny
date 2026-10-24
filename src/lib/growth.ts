@@ -1,6 +1,11 @@
 import { listConceptRequests, type ConceptRequest } from "@/lib/concepts";
+import { sendOwnerEmail } from "@/lib/email";
+import { brandedEmail } from "@/lib/email-layout";
 import { listLeads, type StoredLead } from "@/lib/leads";
 import { listPortalOrders, type PortalOrder } from "@/lib/portal";
+import { sign } from "@/lib/signing";
+import { SITE_URL } from "@/lib/site";
+import { readJson, writeJson } from "@/lib/store";
 
 /**
  * Growth board numbers, computed live from the site's own records.
@@ -10,7 +15,52 @@ import { listPortalOrders, type PortalOrder } from "@/lib/portal";
  *   concepts sent ──────────────────────────────────────────▶ concept status "sent"
  *   orders, revenue ────────────────────────────────────────▶ orders/ (paid via Stripe)
  *   concept → order ── a concept request whose email later placed an order
+ *
+ * The board is the owner's only: it opens with its own "growth" key, which is
+ * only ever emailed to OWNER_EMAIL (never in team alerts).
  */
+
+export const growthLink = () => `${SITE_URL}/portal/growth?k=${sign("growth")}`;
+
+const LINK_COOLDOWN = 10 * 60_000;
+
+/**
+ * Email the owner their private link. Anyone can press the button on the
+ * locked page, but the link only ever goes to the owner, at most every 10 minutes.
+ */
+export async function emailGrowthLink(): Promise<"sent" | "recent"> {
+  const path = "growth/link-sent.json";
+  const last = await readJson<{ sentAt: string }>(path);
+  if (
+    last &&
+    Date.now() - new Date(last.value.sentAt).getTime() < LINK_COOLDOWN
+  ) {
+    return "recent";
+  }
+  const claimed = await writeJson(
+    path,
+    { sentAt: new Date().toISOString() },
+    last ? { etag: last.etag } : { onlyIfNew: true },
+  );
+  if (!claimed) return "recent";
+
+  const link = growthLink();
+  await sendOwnerEmail({
+    subject: "Your private Scribebunny growth board link",
+    html: brandedEmail({
+      eyebrow: "Owner only",
+      heading: "Your growth board",
+      bodyHtml:
+        "<p>Here's your private link to the growth board: enquiries, concepts, orders and revenue, live from the site.</p><p>It's yours alone. The team's order emails don't carry it, so please don't forward this email.</p>",
+      preheader: "Your private link to the live growth numbers.",
+      button: { label: "Open the growth board", href: link },
+      afterButton:
+        "Bookmark it. If you didn't ask for this link, you can ignore this email.",
+    }),
+    text: `Your private growth board link (please don't forward it):\n\n${link}`,
+  });
+  return "sent";
+}
 
 export const RANGES = {
   "7": { label: "Last 7 days", days: 7 },

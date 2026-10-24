@@ -36,17 +36,7 @@ export default async function PortalDashboardPage({ searchParams }: Props) {
 
   return (
     <PortalShell label="Studio">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="font-display text-4xl font-bold text-gray-800">
-          Orders
-        </h1>
-        <Link
-          href={`/portal/growth?k=${encodeURIComponent(k)}`}
-          className="btn-secondary"
-        >
-          Growth board
-        </Link>
-      </div>
+      <h1 className="font-display text-4xl font-bold text-gray-800">Orders</h1>
       <p className="mt-2 text-lg text-gray-700">
         {open.length} in progress · {done.length} complete
       </p>

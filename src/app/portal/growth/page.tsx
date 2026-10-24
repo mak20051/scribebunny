@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { LocalTime } from "@/components/local-time";
 import { PortalShell } from "@/components/portal-shell";
+import { SubmitButton } from "@/components/submit-button";
 import {
   growthReport,
   RANGES,
@@ -10,14 +11,17 @@ import {
   type WeekRow,
 } from "@/lib/growth";
 import { formatUsd } from "@/lib/packages";
-import { isAdminKey } from "@/lib/signing";
+import { isGrowthKey, sign } from "@/lib/signing";
+import { emailGrowthLinkAction } from "./actions";
 
 export const metadata: Metadata = {
   title: "Growth | Scribebunny Studio",
   robots: { index: false, follow: false },
 };
 
-type Props = { searchParams: Promise<{ k?: string; range?: string }> };
+type Props = {
+  searchParams: Promise<{ k?: string; range?: string; sent?: string }>;
+};
 
 const BAR = "#FF3333";
 
@@ -157,13 +161,40 @@ function BarList({
 }
 
 export default async function GrowthPage({ searchParams }: Props) {
-  const { k = "", range: rawRange = "30" } = await searchParams;
-  if (!isAdminKey(k)) {
+  const { k = "", range: rawRange = "30", sent } = await searchParams;
+  if (!isGrowthKey(k)) {
     return (
       <PortalShell label="Studio">
-        <p className="text-center text-lg text-gray-700">
-          Open this page from your studio dashboard link.
-        </p>
+        <div className="mx-auto max-w-md text-center">
+          <h1 className="font-display text-3xl font-bold text-gray-800">
+            Growth board
+          </h1>
+          <p className="mt-3 text-lg text-gray-700">
+            This board is private to the studio owner.
+          </p>
+          {sent === "sent" ? (
+            <p
+              role="status"
+              className="mt-6 text-lg font-semibold text-gray-800"
+            >
+              Sent. The private link is on its way to the owner&rsquo;s inbox.
+            </p>
+          ) : sent === "recent" ? (
+            <p
+              role="status"
+              className="mt-6 text-lg font-semibold text-gray-800"
+            >
+              A link was sent in the last few minutes. Check the owner&rsquo;s
+              inbox.
+            </p>
+          ) : (
+            <form action={emailGrowthLinkAction} className="mt-6">
+              <SubmitButton pendingLabel="Sending…">
+                Email the owner&rsquo;s link
+              </SubmitButton>
+            </form>
+          )}
+        </div>
       </PortalShell>
     );
   }
@@ -178,7 +209,7 @@ export default async function GrowthPage({ searchParams }: Props) {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <Link
-            href={`/portal?k=${key}`}
+            href={`/portal?k=${encodeURIComponent(sign("admin"))}`}
             className="inline-flex items-center gap-1 text-base font-bold text-[#FF3333] hover:underline"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
