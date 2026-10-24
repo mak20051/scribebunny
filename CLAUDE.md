@@ -33,7 +33,9 @@ page for page at the time of the rebuild.
 - `src/app/order-confirmed/page.tsx`: order summary (fulfils the order when no webhook is set)
 - `src/lib/portal.ts`, `src/app/portal/`: client portal (messages, video status, delivery
   links, mark complete) with signed links; `src/lib/store.ts`: private Vercel Blob store
-- `src/app/api/leads/route.ts`: emails form leads and forwards them to the aimviz CRM
+- `src/app/api/leads/route.ts`: emails form leads, stores them (`src/lib/leads.ts`) and
+  forwards them to the aimviz CRM
+- `src/lib/growth.ts`, `src/app/portal/growth/`: growth board (live funnel numbers)
 - `src/lib/concepts.ts`, `src/app/free-concepts/`, `src/app/concepts/`: free 3-concept offer
   (website research in `src/lib/research.ts`, DeepSeek drafting, studio review, send)
 
@@ -54,6 +56,13 @@ the prospect an acknowledgement; in the background the site reads their website
 signed `/concepts/<id>` link, then sends the branded concepts email. Concepts are
 never sent without a person clicking Send. Without the API key the team writes
 them by hand on the same page.
+
+## Growth board
+`/portal/growth` (the "Growth board" button on the studio dashboard, same admin
+link) shows live numbers from the site's own records: enquiries (form leads at
+`portal/leads/<id>.json` plus concept requests), concepts sent, paid orders,
+revenue (`amountCents` on each order), conversion rates, revenue by package, the
+last 8 weeks and recent activity. Only leads sent after this shipped are counted.
 
 ## Business details
 Scribebunny is a small animation studio that loves to draw and tell stories;

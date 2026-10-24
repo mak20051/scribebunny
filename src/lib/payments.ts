@@ -118,6 +118,7 @@ export type Order = {
   videoPackage?: VideoPackage;
   packageName: string;
   amount: string;
+  amountCents: number;
   name: string;
   email: string;
   phone?: string;
@@ -162,6 +163,7 @@ async function loadOrder(sessionId: string) {
     packageName: videoPackage
       ? `${videoPackage.name} package`
       : (session.metadata?.package ?? "Video package"),
+    amountCents: session.amount_total ?? 0,
     amount: new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: (session.currency ?? "usd").toUpperCase(),

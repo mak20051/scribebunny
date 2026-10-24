@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { forwardToCrm } from "@/lib/crm";
+import { recordLead } from "@/lib/leads";
 import { sendTeamEmail } from "@/lib/email";
 import { alertEmail, alertText } from "@/lib/email-layout";
 
@@ -35,6 +36,13 @@ export async function POST(request: Request) {
   try {
     const lead = (await request.json()) as LeadPayload;
     await sendLeadEmail(lead);
+    await recordLead({
+      type: lead.type,
+      name: lead.fields.Name ?? "",
+      email: lead.fields.Email ?? "",
+      phone: lead.fields.Phone,
+      website: lead.fields.Website,
+    }).catch((error) => console.error("Lead record failed", error));
 
     const fields = lead.fields ?? {};
     void forwardToCrm({

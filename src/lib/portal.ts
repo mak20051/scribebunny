@@ -49,6 +49,8 @@ export type PortalOrder = {
   status: "active" | "complete";
   packageName: string;
   amount: string;
+  /** Missing on orders recorded before 2026-10-24; read via orderCents(). */
+  amountCents?: number;
   turnaround?: string;
   client: {
     name: string;
@@ -112,6 +114,7 @@ export async function openPortal(order: Order) {
     status: "active",
     packageName: order.packageName,
     amount: order.amount,
+    amountCents: order.amountCents,
     turnaround: order.videoPackage?.turnaround,
     client: {
       name: order.name,
