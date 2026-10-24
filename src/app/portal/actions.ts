@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import {
   addMessage,
+  DEMO_REF,
+  resetDemo,
   roleFor,
   setOrderStatus,
   updateVideo,
@@ -60,4 +62,10 @@ export async function setOrderStatusAction(formData: FormData) {
   }
   await setOrderStatus(ref, status);
   revalidatePath(`/portal/${ref}`);
+}
+
+/** Demo project only: back to the sample data. */
+export async function resetDemoAction() {
+  await resetDemo();
+  revalidatePath(`/portal/${DEMO_REF}`);
 }

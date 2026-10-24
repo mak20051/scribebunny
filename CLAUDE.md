@@ -48,6 +48,11 @@ private Vercel Blob store `scribebunny-portal` (`BLOB_READ_WRITE_TOKEN`, Product
 and Preview), one JSON file per order at `portal/orders/<ref>.json`, updated with
 ETag compare-and-swap. Without the token the store is in-memory (local runs only).
 
+A demo project shows the portal with sample data: `/portal/SB-DEMO?k=client`
+(client view) and `?k=team` (studio view). It lives at `portal/demo/SB-DEMO.json`,
+never sends email, isn't in the orders list or the growth board, and has a
+"Reset demo" button.
+
 ## Free concepts
 Prospects ask for 3 free concepts at `/free-concepts`. The team gets an alert and
 the prospect an acknowledgement; in the background the site reads their website

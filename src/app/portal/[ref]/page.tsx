@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { CircleCheck, ExternalLink, MessageCircle, Play } from "lucide-react";
+import Link from "next/link";
 import {
   postMessageAction,
+  resetDemoAction,
   setOrderStatusAction,
   updateVideoAction,
 } from "@/app/portal/actions";
@@ -10,6 +12,7 @@ import { LocalTime } from "@/components/local-time";
 import { PortalShell } from "@/components/portal-shell";
 import { SubmitButton } from "@/components/submit-button";
 import {
+  DEMO_REF,
   getPortalOrder,
   roleFor,
   VIDEO_STATUSES,
@@ -80,6 +83,27 @@ export default async function PortalOrderPage({ params, searchParams }: Props) {
   return (
     <PortalShell label={isTeam ? "Studio view" : "Client portal"}>
       <AutoRefresh />
+      {order.demo ? (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-dashed border-gray-800 bg-[#FFF9E0] px-5 py-4">
+          <p className="text-base text-gray-800">
+            <strong>Demo project.</strong> Sample data: send messages and update
+            videos freely. Nothing here emails anyone.
+          </p>
+          <div className="flex flex-wrap items-center gap-4">
+            <Link
+              href={`/portal/${DEMO_REF}?k=${isTeam ? "client" : "team"}`}
+              className="text-base font-bold text-[#FF3333] underline"
+            >
+              {isTeam ? "See the client view" : "See the studio view"}
+            </Link>
+            <form action={resetDemoAction}>
+              <SubmitButton pendingLabel="Resetting…" className="btn-secondary">
+                Reset demo
+              </SubmitButton>
+            </form>
+          </div>
+        </div>
+      ) : null}
       <section className="rounded-[1.75rem] border-4 border-gray-800 bg-white p-5 shadow-[6px_6px_0_#FFE66D] sm:p-8 sm:shadow-[10px_10px_0_#FFE66D]">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>

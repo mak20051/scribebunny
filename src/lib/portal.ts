@@ -5,7 +5,7 @@ import {
   brandedEmail,
   escapeHtml,
 } from "@/lib/email-layout";
-import { VIDEO_SPEC } from "@/lib/packages";
+import { findVideoPackage, formatUsd, VIDEO_SPEC } from "@/lib/packages";
 import type { Order } from "@/lib/payments";
 import { isAdminKey, keyMatches, sign } from "@/lib/signing";
 import { SITE_URL } from "@/lib/site";
@@ -22,6 +22,10 @@ import { listPaths, readJson, updateJson, writeJson } from "@/lib/store";
  *
  * No passwords: each link carries an HMAC key for one role and one order, so
  * it can't be guessed or edited. Rotating PORTAL_SECRET revokes every link.
+ *
+ * The demo project (SB-DEMO) is the exception: sample data at demo/SB-DEMO.json,
+ * open to anyone with /portal/SB-DEMO?k=client or ?k=team, never emails anyone,
+ * and stays out of the orders list and the growth board.
  */
 
 export const VIDEO_STATUSES = [
@@ -63,6 +67,8 @@ export type PortalOrder = {
   dashboardUrl?: string;
   videos: PortalVideo[];
   messages: PortalMessage[];
+  /** The sample project: no emails, not listed, not counted. */
+  demo?: boolean;
 };
 
 export type PortalMessage = {
@@ -76,21 +82,123 @@ const STUDIO_AUTHOR = "Scribebunny studio";
 
 /** Which role a key grants for this order, if any. The admin key opens every order as the team. */
 export function roleFor(ref: string, key?: string): Role | null {
+  if (ref === DEMO_REF && (key === "team" || key === "client")) return key;
   if (keyMatches(key, `team|${ref}`) || isAdminKey(key)) return "team";
   if (keyMatches(key, `client|${ref}`)) return "client";
   return null;
 }
 
 export const portalLink = (ref: string, role: Role) =>
-  `${SITE_URL}/portal/${ref}?k=${sign(`${role}|${ref}`)}`;
+  `${SITE_URL}/portal/${ref}?k=${ref === DEMO_REF ? role : sign(`${role}|${ref}`)}`;
 
 export const dashboardLink = () => `${SITE_URL}/portal?k=${sign("admin")}`;
 
-const orderPath = (ref: string) => `orders/${ref}.json`;
+export const DEMO_REF = "SB-DEMO";
+
+const orderPath = (ref: string) =>
+  ref === DEMO_REF ? `demo/${ref}.json` : `orders/${ref}.json`;
 
 export async function getPortalOrder(ref: string) {
   if (!/^[A-Z0-9-]{3,40}$/.test(ref)) return null;
+  const order = (await readJson<PortalOrder>(orderPath(ref)))?.value ?? null;
+  if (order || ref !== DEMO_REF) return order;
+  await writeJson(orderPath(ref), demoOrder(), { onlyIfNew: true });
   return (await readJson<PortalOrder>(orderPath(ref)))?.value ?? null;
+}
+
+/** Put the demo project back to its sample data. */
+export async function resetDemo() {
+  await writeJson(orderPath(DEMO_REF), demoOrder());
+}
+
+/** A Five Videos order part-way through: one video of each status. */
+function demoOrder(): PortalOrder {
+  const five = findVideoPackage("five")!;
+  const ago = (hours: number) =>
+    new Date(Date.now() - hours * 3_600_000).toISOString();
+  const video = (
+    number: number,
+    title: string,
+    status: VideoStatus,
+    hours: number,
+    deliveryUrl?: string,
+  ): PortalVideo => ({
+    number,
+    title,
+    status,
+    updatedAt: ago(hours),
+    ...(deliveryUrl ? { deliveryUrl } : {}),
+  });
+  const client = (hours: number, text: string): PortalMessage => ({
+    at: ago(hours),
+    from: "client",
+    author: "Maya Patel",
+    text,
+  });
+  const team = (hours: number, text: string): PortalMessage => ({
+    at: ago(hours),
+    from: "team",
+    author: STUDIO_AUTHOR,
+    text,
+  });
+  return {
+    ref: DEMO_REF,
+    demo: true,
+    createdAt: ago(120),
+    status: "active",
+    packageName: `${five.name} package`,
+    amount: formatUsd(five.priceCents),
+    amountCents: five.priceCents,
+    turnaround: five.turnaround,
+    client: {
+      name: "Maya Patel",
+      email: "maya@example.com",
+      phone: "+1 555-010-2000",
+      website: "brightleaf.example",
+    },
+    topic: "How Brightleaf helps clinics book patients online",
+    videos: [
+      video(
+        1,
+        "Homepage explainer",
+        "Complete",
+        30,
+        "https://youtu.be/S5vdBu8gJUg",
+      ),
+      video(
+        2,
+        "Booking walkthrough",
+        "Ready for review",
+        6,
+        "https://youtu.be/7wBxpHdds7w",
+      ),
+      video(3, "Reminders and no-shows", "Animating", 20),
+      video(4, "Clinic owner testimonial", "Script & storyboard", 48),
+      video(5, "Social teaser", "Waiting for brief", 120),
+    ],
+    messages: [
+      client(
+        118,
+        "From checkout, what the video should explain: How Brightleaf helps clinics book patients online",
+      ),
+      client(
+        117,
+        "Hi! Our site is brightleaf.example. The audience is small clinic owners who still book by phone. Brand files: https://example.com/brightleaf-brand",
+      ),
+      team(
+        110,
+        "Thanks Maya! We love this story. We'll send the first script and storyboard for the homepage video tomorrow.",
+      ),
+      client(
+        40,
+        "The homepage video looks great. Could the narrator sound a little warmer?",
+      ),
+      team(
+        30,
+        "Done! Video 1 is complete with the warmer voice. Video 2 is ready for your review now.",
+      ),
+    ],
+  };
 }
 
 /** Every order, newest first. */
@@ -158,6 +266,7 @@ export async function addMessage(ref: string, from: Role, text: string) {
       text,
     };
     current.messages.push(message);
+    if (current.demo) current.messages = current.messages.slice(-40);
   });
   await notifyMessage(order, message!);
 }
@@ -205,6 +314,7 @@ export async function setOrderStatus(
 }
 
 async function notifyMessage(order: PortalOrder, message: PortalMessage) {
+  if (order.demo) return;
   if (message.from === "client") {
     const title = `New message from ${message.author} on ${order.ref}`;
     const fields: [string, string | undefined][] = [
@@ -239,6 +349,7 @@ async function notifyMessage(order: PortalOrder, message: PortalMessage) {
 }
 
 async function notifyVideo(order: PortalOrder, video: PortalVideo) {
+  if (order.demo) return;
   const ready = video.status === "Ready for review";
   await emailClient(order, {
     subject: ready
@@ -258,6 +369,7 @@ async function notifyVideo(order: PortalOrder, video: PortalVideo) {
 }
 
 async function notifyComplete(order: PortalOrder) {
+  if (order.demo) return;
   await emailClient(order, {
     subject: `Your Scribebunny project ${order.ref} is complete`,
     eyebrow: `Order ${order.ref}`,
