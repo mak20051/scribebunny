@@ -6,7 +6,7 @@ import { SubmitButton } from "@/components/submit-button";
 import { resendTeamLinkAction } from "@/app/portal/actions";
 import { memberForKey } from "@/lib/access";
 import { listConceptRequests } from "@/lib/concepts";
-import { DEMO_REF, listPortalOrders } from "@/lib/portal";
+import { DEMO_REF, isPaid, listPortalOrders } from "@/lib/portal";
 
 export const metadata: Metadata = {
   title: "Orders | Scribebunny Studio",
@@ -101,6 +101,9 @@ export default async function PortalDashboardPage({ searchParams }: Props) {
           >
             Demo project
           </Link>
+          <Link href={`/portal/new?k=${member.key}`} className="btn-primary">
+            New client portal
+          </Link>
         </div>
       </div>
       <p className="mt-2 text-lg text-gray-700">
@@ -134,14 +137,18 @@ export default async function PortalDashboardPage({ searchParams }: Props) {
                     </div>
                     <span
                       className={`rounded-full border-2 border-gray-800 px-3 py-1 text-sm font-bold ${
-                        order.status === "complete"
-                          ? "bg-green-600 text-white"
-                          : "bg-[#FFE66D] text-gray-800"
+                        !isPaid(order)
+                          ? "bg-white text-gray-800"
+                          : order.status === "complete"
+                            ? "bg-green-600 text-white"
+                            : "bg-[#FFE66D] text-gray-800"
                       }`}
                     >
-                      {order.status === "complete"
-                        ? "Complete"
-                        : `${completed}/${order.videos.length} videos done`}
+                      {!isPaid(order)
+                        ? "Awaiting payment"
+                        : order.status === "complete"
+                          ? "Complete"
+                          : `${completed}/${order.videos.length} videos done`}
                     </span>
                   </div>
                 </Link>

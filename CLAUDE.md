@@ -56,6 +56,16 @@ Every paid order opens a portal. Links carry random keys, unique per person
 Every studio update emails the client: messages, each video status change, new
 video links, and the project being completed or reopened.
 
+Custom-price portals: "New client portal" on the dashboard (`/portal/new`, any
+team member) creates an order by hand (`manual`, own price and number of
+videos) with its own client link, and can email the client their link. Unless
+marked already paid, `payment.status` is "awaiting" and the client's portal shows
+a Pay button: a Stripe Checkout for that price (`createPortalCheckout`, metadata
+`portal`, invoiced by Infinisys LLC) that returns to `/portal/paid`, which settles
+it once (`markPortalPaid`; the webhook can too) and alerts the team. The studio
+can also "Mark as paid" for payments made another way. The growth board counts
+an order only once it is paid, by payment date.
+
 After delivery (`src/lib/launch.ts`, `src/components/launch-kit.tsx`): once a
 video is Complete the portal shows "Launch your video" (`#launch`): a six-step
 checklist the client ticks, a review form (`#review`; the team gets an alert,

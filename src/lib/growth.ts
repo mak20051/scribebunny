@@ -1,6 +1,11 @@
 import { listConceptRequests, type ConceptRequest } from "@/lib/concepts";
 import { listLeads, type StoredLead } from "@/lib/leads";
-import { listPortalOrders, type PortalOrder } from "@/lib/portal";
+import {
+  isPaid,
+  listPortalOrders,
+  paidDate,
+  type PortalOrder,
+} from "@/lib/portal";
 
 /**
  * Growth board numbers, computed live from the site's own records.
@@ -8,7 +13,8 @@ import { listPortalOrders, type PortalOrder } from "@/lib/portal";
  *   enquiries ─┬─ form leads (contact, quote, agency)      leads/
  *              └─ free concept requests                     concepts/
  *   concepts sent ──────────────────────────────────────────▶ concept status "sent"
- *   orders, revenue ────────────────────────────────────────▶ orders/ (paid via Stripe)
+ *   orders, revenue ────────────────────────────────────────▶ orders/ once paid (Stripe
+ *                                                              or marked paid), by payment date
  *   concept → order ── a concept request whose email later placed an order
  *
  * The board is the owner's only: it opens with the owner's own key (lib/access.ts).
@@ -53,11 +59,14 @@ function startOfWeek(date: Date) {
 }
 
 export async function growthReport(range: RangeKey) {
-  const [leads, concepts, orders] = await Promise.all([
+  const [leads, concepts, allOrders] = await Promise.all([
     listLeads(),
     listConceptRequests(),
     listPortalOrders(),
   ]);
+  // Custom-price portals count once the client has paid.
+  const orders = allOrders.filter(isPaid);
+  const awaitingPayment = allOrders.length - orders.length;
 
   const days = RANGES[range].days;
   const since = days === null ? 0 : Date.now() - days * DAY;
@@ -67,7 +76,7 @@ export async function growthReport(range: RangeKey) {
   const rangeConcepts = concepts.filter((request) =>
     inRange(request.createdAt),
   );
-  const rangeOrders = orders.filter((order) => inRange(order.createdAt));
+  const rangeOrders = orders.filter((order) => inRange(paidDate(order)));
   const sent = rangeConcepts.filter((request) => request.status === "sent");
   const revenueCents = rangeOrders.reduce(
     (sum, order) => sum + orderCents(order),
@@ -76,7 +85,7 @@ export async function growthReport(range: RangeKey) {
 
   const orderEmails = orders.map((order) => ({
     email: order.client.email.toLowerCase(),
-    at: order.createdAt,
+    at: paidDate(order),
   }));
   const conceptsThatOrdered = sent.filter((request) =>
     orderEmails.some(
@@ -105,6 +114,7 @@ export async function growthReport(range: RangeKey) {
       : null,
     enquiryToOrderRate: enquiries ? rangeOrders.length / enquiries : null,
     activeProjects: orders.filter((order) => order.status === "active").length,
+    awaitingPayment,
   };
 
   const funnel = [
@@ -173,7 +183,7 @@ function weeklyRows(
     if (sentRow) sentRow.conceptsSent += 1;
   }
   for (const order of orders) {
-    const row = rowFor(order.createdAt);
+    const row = rowFor(paidDate(order));
     if (row) {
       row.orders += 1;
       row.revenueCents += orderCents(order);
@@ -207,7 +217,7 @@ function recentActivity(
         label: request.lead.name,
       })),
     ...orders.map((order) => ({
-      at: order.createdAt,
+      at: paidDate(order),
       kind: "Order",
       label: `${order.client.name || order.client.email}: ${order.packageName}, ${order.amount}`,
     })),

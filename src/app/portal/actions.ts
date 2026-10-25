@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import {
   filesFolder,
   MAX_FILES_PER_MESSAGE,
@@ -8,6 +9,8 @@ import {
 } from "@/lib/attachments";
 import { fileInfo, portalPath } from "@/lib/store";
 import { saveReview, toggleLaunchStep } from "@/lib/launch";
+import { createPortalCheckout } from "@/lib/payments";
+import { SITE_URL } from "@/lib/site";
 import { redirect } from "next/navigation";
 import {
   memberForKey,
@@ -17,8 +20,11 @@ import {
 } from "@/lib/access";
 import {
   addMessage,
+  createManualPortal,
   DEMO_REF,
+  markPortalPaid,
   openOrder,
+  sendPortalWelcome,
   replaceClientKey,
   resetDemo,
   setOrderStatus,
@@ -190,4 +196,60 @@ export async function submitReviewAction(formData: FormData) {
     canFeature: formData.get("canFeature") === "on",
   });
   revalidatePath(`/portal/${ref}`);
+}
+
+/** Client: pay a custom-price project with Stripe. */
+export async function payPortalAction(formData: FormData) {
+  const { ref, role } = await authorize(formData);
+  const opened = await openOrder(ref, field(formData, "k", 64));
+  if (role !== "client" || !opened) throw new Error("Only the client pays.");
+  const origin = (await headers()).get("origin") ?? SITE_URL;
+  redirect(await createPortalCheckout(opened.order, origin));
+}
+
+/** Studio: the client paid another way (bank transfer, own invoice). */
+export async function markPaidAction(formData: FormData) {
+  const { ref } = await authorize(formData, true);
+  await markPortalPaid(ref, { method: "outside" });
+  revalidatePath(`/portal/${ref}`);
+}
+
+/** Dashboard: a new client portal with a custom price. */
+export async function createPortalAction(formData: FormData) {
+  const member = await memberForKey(field(formData, "k", 64));
+  if (!member) throw new Error("Open this from your studio dashboard.");
+  const name = field(formData, "name", 120);
+  const email = field(formData, "email", 200).toLowerCase();
+  const projectName = field(formData, "projectName", 120);
+  const videos = Number(field(formData, "videos", 3));
+  const dollars = Number(field(formData, "price", 20).replace(/[$,\s]/g, ""));
+  const amountCents = Math.round(dollars * 100);
+  const problems = [
+    !name && "the client's name",
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && "a valid email",
+    !projectName && "a project name",
+    !(Number.isInteger(videos) && videos >= 1 && videos <= 100) &&
+      "1 to 100 videos",
+    !(amountCents >= 100 && amountCents <= 10_000_000) &&
+      "a price from $1 to $100,000",
+  ].filter(Boolean);
+  if (problems.length) throw new Error(`Please add ${problems.join(", ")}.`);
+
+  const order = await createManualPortal({
+    name,
+    email,
+    phone: field(formData, "phone", 40) || undefined,
+    website: field(formData, "website", 200) || undefined,
+    topic: field(formData, "topic", 2000) || undefined,
+    projectName,
+    videos,
+    amountCents,
+    turnaround: field(formData, "turnaround", 120) || undefined,
+    paid: formData.get("payment") === "paid",
+  });
+  const welcome = formData.get("welcome") === "on";
+  if (welcome) await sendPortalWelcome(order);
+  redirect(
+    `/portal/${order.ref}?k=${member.key}&created=${welcome ? "emailed" : "1"}`,
+  );
 }

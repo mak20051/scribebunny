@@ -8,6 +8,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import {
+  markPaidAction,
+  payPortalAction,
   replaceClientLinkAction,
   resetDemoAction,
   setOrderStatusAction,
@@ -22,11 +24,13 @@ import { SubmitButton } from "@/components/submit-button";
 import {
   clientLink,
   clientPath,
+  isPaid,
   openOrder,
+  type PortalOrder,
   VIDEO_STATUSES,
   type PortalVideo,
 } from "@/lib/portal";
-import { EMAIL } from "@/lib/site";
+import { EMAIL, PARENT_COMPANY } from "@/lib/site";
 import { storeConfigured } from "@/lib/store";
 import {
   formatBytes,
@@ -42,7 +46,7 @@ export const metadata: Metadata = {
 
 type Props = {
   params: Promise<{ ref: string }>;
-  searchParams: Promise<{ k?: string }>;
+  searchParams: Promise<{ k?: string; created?: string; paid?: string }>;
 };
 
 const STATUS_STYLE: Record<PortalVideo["status"], string> = {
@@ -111,6 +115,53 @@ function MessageFiles({
   );
 }
 
+function Notice({ children }: { children: React.ReactNode }) {
+  return (
+    <p
+      role="status"
+      className="mb-6 rounded-2xl border-2 border-gray-800 bg-[#FFF9E0] px-5 py-4 text-base text-gray-800"
+    >
+      {children}
+    </p>
+  );
+}
+
+/** Custom-price portals before payment: the client's Pay button, or the team's view of it. */
+function PaymentCard({
+  order,
+  isTeam,
+  orderRef,
+  k,
+}: {
+  order: PortalOrder;
+  isTeam: boolean;
+  orderRef: string;
+  k: string;
+}) {
+  const videos = order.videos.length;
+  return (
+    <section className="mb-8 rounded-[1.75rem] border-4 border-gray-800 bg-[#FFE66D] p-5 sm:p-8">
+      <h2 className="font-display text-3xl font-bold text-gray-800">
+        {isTeam ? `Awaiting payment: ${order.amount}` : "Ready when you are"}
+      </h2>
+      <p className="mt-2 max-w-2xl text-lg text-gray-800">
+        {isTeam
+          ? "The client pays with the Pay button in their portal. If they paid another way, mark it paid here; they get a confirmation email either way."
+          : `${order.packageName}: ${videos} ${videos === 1 ? "video" : "videos"} for ${order.amount}. Pay securely with Stripe, and your invoice comes from ${PARENT_COMPANY}.`}
+      </p>
+      <form action={isTeam ? markPaidAction : payPortalAction} className="mt-5">
+        <Hidden orderRef={orderRef} k={k} />
+        <SubmitButton
+          pendingLabel={isTeam ? "Saving…" : "Opening Stripe…"}
+          className={`${isTeam ? "btn-secondary" : "btn-primary"} inline-flex w-full items-center justify-center gap-2 sm:w-auto`}
+        >
+          {isTeam ? "Mark as paid" : `Pay ${order.amount} securely`}
+        </SubmitButton>
+      </form>
+    </section>
+  );
+}
+
 function Hidden({ orderRef, k }: { orderRef: string; k: string }) {
   return (
     <>
@@ -122,7 +173,7 @@ function Hidden({ orderRef, k }: { orderRef: string; k: string }) {
 
 export default async function PortalOrderPage({ params, searchParams }: Props) {
   const { ref } = await params;
-  const { k = "" } = await searchParams;
+  const { k = "", created, paid } = await searchParams;
   const opened = await openOrder(ref, k);
 
   if (!opened) {
@@ -163,6 +214,23 @@ export default async function PortalOrderPage({ params, searchParams }: Props) {
   return (
     <PortalShell label={isTeam ? "Studio view" : "Client portal"}>
       <AutoRefresh />
+      {isTeam && created ? (
+        <Notice>
+          <strong>Portal created.</strong>{" "}
+          {created === "emailed"
+            ? "We emailed the client their private link."
+            : "Copy the client's private link below and send it to them."}
+        </Notice>
+      ) : null}
+      {!isTeam && paid && isPaid(order) ? (
+        <Notice>
+          <strong>Payment received. Thank you!</strong> Your receipt and invoice
+          arrive by email from Stripe. Next, send us your brief below.
+        </Notice>
+      ) : null}
+      {isPaid(order) ? null : (
+        <PaymentCard order={order} isTeam={isTeam} orderRef={ref} k={k} />
+      )}
       {order.demo ? (
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-dashed border-gray-800 bg-[#FFF9E0] px-5 py-4">
           <p className="text-base text-gray-800">
@@ -211,7 +279,7 @@ export default async function PortalOrderPage({ params, searchParams }: Props) {
         <dl className="mt-8 grid grid-cols-2 gap-x-4 gap-y-6 lg:grid-cols-4">
           {[
             ["Package", order.packageName],
-            ["Amount paid", order.amount],
+            [isPaid(order) ? "Amount paid" : "Price", order.amount],
             [
               "Progress",
               `${completed} of ${order.videos.length} videos complete`,
@@ -262,6 +330,17 @@ export default async function PortalOrderPage({ params, searchParams }: Props) {
                     <LocalTime iso={order.createdAt} />
                   </dd>
                 </div>
+                {order.payment?.paidAt ? (
+                  <div>
+                    <dt className="inline font-bold">Paid: </dt>
+                    <dd className="inline">
+                      <LocalTime iso={order.payment.paidAt} />
+                      {order.payment.method === "outside"
+                        ? " (outside Stripe)"
+                        : " (Stripe)"}
+                    </dd>
+                  </div>
+                ) : null}
                 {order.invoiceUrl ? (
                   <div>
                     <a

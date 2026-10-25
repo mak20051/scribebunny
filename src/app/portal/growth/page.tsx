@@ -235,7 +235,7 @@ export default async function GrowthPage({ searchParams }: Props) {
         <StatTile
           label="Orders"
           value={String(totals.orders)}
-          detail={`${totals.activeProjects} projects in progress`}
+          detail={`${totals.activeProjects} in progress${totals.awaitingPayment ? ` · ${totals.awaitingPayment} awaiting payment` : ""}`}
         />
         <StatTile
           label="Revenue"

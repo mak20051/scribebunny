@@ -15,7 +15,13 @@ import {
   VIDEO_SPEC,
   type VideoPackage,
 } from "@/lib/packages";
-import { clientLink, openPortal } from "@/lib/portal";
+import {
+  clientLink,
+  clientPath,
+  markPortalPaid,
+  openPortal,
+  type PortalOrder,
+} from "@/lib/portal";
 import { PARENT_COMPANY } from "@/lib/site";
 
 /**
@@ -51,12 +57,21 @@ export const webhookConfigured = () =>
 /** Stripe product tax code for video production: "General – Services". */
 const TAX_CODE = "txcd_20030000";
 
-export async function createCheckout(
-  videoPackage: VideoPackage,
-  origin: string,
-): Promise<string> {
-  const productName = `Scribebunny ${videoPackage.name} Package`;
-  const metadata = { package: videoPackage.id };
+type CheckoutInput = {
+  productName: string;
+  description: string;
+  amountCents: number;
+  metadata: Record<string, string>;
+  successUrl: string;
+  cancelUrl: string;
+  customerEmail?: string;
+  /** Package orders ask for contact details; portal payments already have them. */
+  askForDetails: boolean;
+};
+
+/** A Stripe Checkout page for one line item, invoiced by Infinisys LLC. */
+async function checkoutUrl(input: CheckoutInput): Promise<string> {
+  const { productName, metadata } = input;
   const session = await stripe().checkout.sessions.create({
     // The Infinisys account turns on Stripe Managed Payments by default, which only
     // covers digital products. Video production is a service, so we stay merchant of record.
@@ -70,31 +85,39 @@ export async function createCheckout(
         quantity: 1,
         price_data: {
           currency: "usd",
-          unit_amount: videoPackage.priceCents,
+          unit_amount: input.amountCents,
           product_data: {
             name: productName,
-            description: packageSummary(videoPackage),
+            description: input.description,
             tax_code: TAX_CODE,
           },
         },
       },
     ],
-    phone_number_collection: { enabled: true },
     billing_address_collection: "auto",
-    custom_fields: [
-      {
-        key: "website",
-        label: { type: "custom", custom: "Company website" },
-        type: "text",
-        optional: true,
-      },
-      {
-        key: "topic",
-        label: { type: "custom", custom: "What should the video explain?" },
-        type: "text",
-        optional: true,
-      },
-    ],
+    ...(input.askForDetails
+      ? {
+          phone_number_collection: { enabled: true },
+          custom_fields: [
+            {
+              key: "website",
+              label: { type: "custom", custom: "Company website" },
+              type: "text",
+              optional: true,
+            },
+            {
+              key: "topic",
+              label: {
+                type: "custom",
+                custom: "What should the video explain?",
+              },
+              type: "text",
+              optional: true,
+            },
+          ],
+        }
+      : {}),
+    ...(input.customerEmail ? { customer_email: input.customerEmail } : {}),
     invoice_creation: {
       enabled: true,
       invoice_data: {
@@ -105,11 +128,41 @@ export async function createCheckout(
     },
     payment_intent_data: { description: productName, metadata },
     metadata,
-    success_url: `${origin}/order-confirmed?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${origin}/#pricing`,
+    success_url: input.successUrl,
+    cancel_url: input.cancelUrl,
   } as Stripe.Checkout.SessionCreateParams);
   if (!session.url) throw new Error("Stripe returned no checkout URL");
   return session.url;
+}
+
+export function createCheckout(videoPackage: VideoPackage, origin: string) {
+  return checkoutUrl({
+    productName: `Scribebunny ${videoPackage.name} Package`,
+    description: packageSummary(videoPackage),
+    amountCents: videoPackage.priceCents,
+    metadata: { package: videoPackage.id },
+    successUrl: `${origin}/order-confirmed?session_id={CHECKOUT_SESSION_ID}`,
+    cancelUrl: `${origin}/#pricing`,
+    askForDetails: true,
+  });
+}
+
+/** The Pay button on a custom-price portal. */
+export function createPortalCheckout(order: PortalOrder, origin: string) {
+  if (order.payment?.status !== "awaiting" || !order.amountCents) {
+    throw new Error("This project has nothing to pay.");
+  }
+  const videos = order.videos.length;
+  return checkoutUrl({
+    productName: `Scribebunny ${order.packageName}`,
+    description: `${videos} ${videos === 1 ? "video" : "videos"} · project ${order.ref}`,
+    amountCents: order.amountCents,
+    metadata: { portal: order.ref },
+    successUrl: `${origin}/portal/paid?session_id={CHECKOUT_SESSION_ID}`,
+    cancelUrl: `${origin}${clientPath(order)}`,
+    customerEmail: order.client.email || undefined,
+    askForDetails: false,
+  });
 }
 
 export type Order = {
@@ -131,6 +184,8 @@ export type Order = {
   paymentId?: string;
   dashboardUrl?: string;
   paidAt: string;
+  /** Set when this pays for a custom-price portal rather than a package. */
+  portalRef?: string;
 };
 
 function customField(session: Stripe.Checkout.Session, key: string) {
@@ -188,6 +243,7 @@ async function loadOrder(sessionId: string) {
     dashboardUrl: paymentId
       ? `https://dashboard.stripe.com/${session.livemode ? "" : "test/"}payments/${paymentId}`
       : undefined,
+    portalRef: session.metadata?.portal,
     paidAt: new Date(session.created * 1000).toLocaleString("en-US", {
       timeZone: "America/Phoenix",
       dateStyle: "medium",
@@ -205,6 +261,10 @@ export async function describeOrder(sessionId: string) {
 /** Record a paid order once: the team alert, then the customer's confirmation. */
 export async function fulfil(sessionId: string) {
   let order = await loadOrder(sessionId);
+  if (order.portalRef) {
+    await settlePortalPayment(sessionId, order);
+    return order;
+  }
   const paymentId = order.paymentId;
   if (!order.paid || !paymentId) return order;
 
@@ -318,4 +378,47 @@ ${summary}
     }),
     text: `Hi ${order.name.split(" ")[0] || "there"},\n\nThank you for your order (${order.reference}): ${order.packageName}, ${order.amount}.\n\nOpen your project portal to send your brief: ${portalUrl}\n\nWe'll write the script, sketch the storyboard, and deliver your video (${delivery}).\n\nThe Scribebunny studio`,
   });
+}
+
+/** A custom-price portal paid through Stripe: mark it paid once, then tell the team. */
+async function settlePortalPayment(sessionId: string, paid: Order) {
+  let order = paid;
+  const ref = order.portalRef;
+  if (!order.paid || !ref) return;
+  if (!order.invoiceNumber) {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    order = await loadOrder(sessionId);
+  }
+  const portal = await markPortalPaid(ref, {
+    method: "stripe",
+    invoiceUrl: order.invoiceUrl,
+    dashboardUrl: order.dashboardUrl,
+  });
+  if (!portal) return;
+  const title = `Payment received: ${portal.packageName} (${order.amount}) from ${portal.client.name || portal.client.email}`;
+  const fields: [string, string | undefined][] = [
+    ["Project", `${portal.ref} · ${portal.packageName}`],
+    ["Videos", String(portal.videos.length)],
+    ["Amount paid", order.amount],
+    ["Name", portal.client.name],
+    ["Email", portal.client.email],
+    ["Invoice", order.invoiceNumber],
+    ["Invoice link", order.invoiceUrl],
+    ["Stripe payment", order.dashboardUrl],
+    ["Paid at", `${order.paidAt} (Arizona time)`],
+  ];
+  await alertTeam((member) => ({
+    subject: `💰 ${title}`,
+    html: alertEmail({
+      title,
+      fields,
+      tone: "paid",
+      link: {
+        label: "Open in the portal",
+        href: teamOrderLink(portal.ref, member),
+      },
+    }),
+    text: `${alertText(title, fields)}\n\nPortal: ${teamOrderLink(portal.ref, member)}`,
+    replyTo: portal.client.email || undefined,
+  }));
 }

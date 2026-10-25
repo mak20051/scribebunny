@@ -8,16 +8,18 @@ import {
 import { filesFolder, type Attachment } from "@/lib/attachments";
 import type { Review } from "@/lib/launch";
 import { sendCustomerEmail } from "@/lib/email";
+import { randomBytes } from "node:crypto";
 import {
   alertEmail,
   alertText,
   brandedEmail,
+  detailsTable,
   escapeHtml,
 } from "@/lib/email-layout";
 import { findVideoPackage, formatUsd, VIDEO_SPEC } from "@/lib/packages";
 import type { Order } from "@/lib/payments";
 import { keyMatches, sign } from "@/lib/signing";
-import { SITE_URL } from "@/lib/site";
+import { PARENT_COMPANY, SITE_URL } from "@/lib/site";
 import {
   deleteFiles,
   listPaths,
@@ -99,6 +101,17 @@ export type PortalOrder = {
   review?: Review;
   /** The sample project: no emails, not listed, not counted. */
   demo?: boolean;
+  /** Created by the team from the dashboard, with a custom price. */
+  manual?: boolean;
+  /**
+   * Custom-price portals only: "awaiting" until the client pays with the Pay
+   * button (Stripe) or the team marks it paid. Package orders are paid at checkout.
+   */
+  payment?: {
+    status: "awaiting" | "paid";
+    method?: "stripe" | "outside";
+    paidAt?: string;
+  };
 };
 
 export type PortalMessage = {
@@ -289,12 +302,7 @@ export async function openPortal(order: Order): Promise<PortalOrder> {
     clientKey: newKey(),
     invoiceUrl: order.invoiceUrl,
     dashboardUrl: order.dashboardUrl,
-    videos: Array.from({ length: count }, (_, index) => ({
-      number: index + 1,
-      title: count === 1 ? "Your video" : `Video ${index + 1}`,
-      status: "Waiting for brief",
-      updatedAt: now,
-    })),
+    videos: newVideos(count, now),
     messages: order.topic
       ? [
           {
@@ -308,6 +316,149 @@ export async function openPortal(order: Order): Promise<PortalOrder> {
   };
   await writeJson(orderPath(portal.ref), portal, { onlyIfNew: true });
   return (await getPortalOrder(portal.ref)) ?? portal;
+}
+
+function newVideos(count: number, now: string): PortalVideo[] {
+  return Array.from({ length: count }, (_, index) => ({
+    number: index + 1,
+    title: count === 1 ? "Your video" : `Video ${index + 1}`,
+    status: "Waiting for brief",
+    updatedAt: now,
+  }));
+}
+
+/** True once the client has paid (package orders are always paid). */
+export const isPaid = (order: PortalOrder) =>
+  order.payment?.status !== "awaiting";
+
+/** When the money came in: checkout time for packages, payment time for custom portals. */
+export const paidDate = (order: PortalOrder) =>
+  order.payment?.paidAt ?? order.createdAt;
+
+export const formatAmount = (cents: number) =>
+  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
+    cents / 100,
+  );
+
+export type NewPortal = {
+  name: string;
+  email: string;
+  phone?: string;
+  website?: string;
+  topic?: string;
+  projectName: string;
+  videos: number;
+  amountCents: number;
+  turnaround?: string;
+  /** Already paid outside Stripe; otherwise the client pays in the portal. */
+  paid: boolean;
+};
+
+/** A portal the team creates by hand, with its own price and number of videos. */
+export async function createManualPortal(input: NewPortal) {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const ref = `SB-${[...randomBytes(8)].map((byte) => alphabet[byte % alphabet.length]).join("")}`;
+    const now = new Date().toISOString();
+    const portal: PortalOrder = {
+      ref,
+      createdAt: now,
+      status: "active",
+      manual: true,
+      packageName: input.projectName,
+      amount: formatAmount(input.amountCents),
+      amountCents: input.amountCents,
+      turnaround: input.turnaround,
+      client: {
+        name: input.name,
+        email: input.email,
+        phone: input.phone,
+        website: input.website,
+      },
+      topic: input.topic,
+      clientKey: newKey(),
+      payment: input.paid
+        ? { status: "paid", method: "outside", paidAt: now }
+        : { status: "awaiting" },
+      videos: newVideos(input.videos, now),
+      messages: [],
+    };
+    if (await writeJson(orderPath(ref), portal, { onlyIfNew: true })) {
+      return portal;
+    }
+  }
+  throw new Error("Could not create a project reference. Please try again.");
+}
+
+/** Welcome a client to a portal the team created: what they get, and how to pay. */
+export async function sendPortalWelcome(order: PortalOrder) {
+  const awaiting = order.payment?.status === "awaiting";
+  const videos = order.videos.length;
+  await emailClient(order, {
+    subject: `Your Scribebunny project portal is ready (${order.ref})`,
+    eyebrow: `Project ${order.ref}`,
+    heading: "Your project portal is ready!",
+    bodyHtml: `<p>We're a small studio that loves to draw and tell stories, and we can't wait to start on yours. Your project portal is where we chat, share drafts and deliver your ${videos === 1 ? "video" : "videos"}.</p>${detailsTable(
+      [
+        ["Project", order.packageName],
+        ["Videos", String(videos)],
+        [awaiting ? "Price" : "Paid", order.amount],
+        ["Delivery", order.turnaround],
+      ],
+    )}<p>${
+      awaiting
+        ? `To get started, pay securely in your portal. Your invoice comes from ${PARENT_COMPANY}. Then send us your brief and we'll start sketching.`
+        : "Open your portal and send us your brief: your website, what the video should explain, who it's for, and any brand files."
+    }</p>`,
+    preheader: awaiting
+      ? "Pay securely in your portal and we'll start sketching."
+      : "Send us your brief and we'll start sketching.",
+    button: {
+      label: awaiting ? "Pay and get started" : "Open your project portal",
+      href: clientLink(order),
+    },
+  });
+}
+
+/**
+ * Mark a custom-price portal paid, once. Returns the order if this call did it
+ * (and emails the client), or null if it was already paid.
+ */
+export async function markPortalPaid(
+  ref: string,
+  details: {
+    method: "stripe" | "outside";
+    invoiceUrl?: string;
+    dashboardUrl?: string;
+  },
+) {
+  let claimed = false;
+  const order = await updateOrder(ref, (current) => {
+    if (current.payment?.status !== "awaiting") return;
+    claimed = true;
+    current.payment = {
+      status: "paid",
+      method: details.method,
+      paidAt: new Date().toISOString(),
+    };
+    if (details.invoiceUrl) current.invoiceUrl = details.invoiceUrl;
+    if (details.dashboardUrl) current.dashboardUrl = details.dashboardUrl;
+  });
+  if (!claimed) return null;
+  if (!order.demo) {
+    await emailClient(order, {
+      subject: `Payment received for ${order.ref}`,
+      eyebrow: `Project ${order.ref} · ${order.amount}`,
+      heading: "Payment received. Let's get drawing!",
+      bodyHtml: `<p>Thank you! We've received ${escapeHtml(order.amount)} for ${escapeHtml(order.packageName)}.${
+        details.method === "stripe"
+          ? ` Your receipt and invoice from ${PARENT_COMPANY} arrive separately from Stripe.`
+          : ""
+      }</p><p>Next, send us your brief in your portal: your website, what the video should explain, who it's for, and any brand files.</p>`,
+      preheader: "Send us your brief and we'll start sketching.",
+    });
+  }
+  return order;
 }
 
 /** Change an order and save it, retrying if someone else saved first. */
