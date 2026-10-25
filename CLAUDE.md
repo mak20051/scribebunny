@@ -54,7 +54,14 @@ Every paid order opens a portal. Links carry random keys, unique per person
   link (`src/lib/signing.ts`, `PORTAL_SECRET`) until it is replaced.
 
 Every studio update emails the client: messages, each video status change, new
-video links, and the project being completed or reopened. Portal data lives in the
+video links, and the project being completed or reopened.
+
+Messages can carry screenshots and files (`src/lib/attachments.ts`): attach,
+paste or drop, up to 10 per message and 50 MB each. Browsers upload straight to
+the Blob store at `portal/files/<ref>/` (`/api/portal/upload` only checks the
+portal key and issues an upload token); `/portal/<ref>/file` serves them only
+to people with a key to that order. Locally, without the token, files go
+through the upload route into memory. Portal data lives in the
 private Vercel Blob store `scribebunny-portal` (`BLOB_READ_WRITE_TOKEN`, Production
 and Preview), one JSON file per order at `portal/orders/<ref>.json`, updated with
 ETag compare-and-swap. Without the token the store is in-memory (local runs only).

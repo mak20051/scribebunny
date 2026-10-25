@@ -1,6 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import {
+  filesFolder,
+  MAX_FILES_PER_MESSAGE,
+  type Attachment,
+} from "@/lib/attachments";
+import { fileInfo, portalPath } from "@/lib/store";
 import { redirect } from "next/navigation";
 import {
   memberForKey,
@@ -47,9 +53,44 @@ async function authorizeOwner(formData: FormData) {
 export async function postMessageAction(formData: FormData) {
   const { ref, role } = await authorize(formData);
   const message = field(formData, "message", 4000);
-  if (!message) return;
-  await addMessage(ref, role, message);
+  const attachments = await readAttachments(formData, ref);
+  if (!message && !attachments.length) return;
+  await addMessage(ref, role, message, attachments);
   revalidatePath(`/portal/${ref}`);
+}
+
+/** Files the browser says it uploaded: each must be in this order's folder and really there. */
+async function readAttachments(formData: FormData, ref: string) {
+  let claimed: unknown;
+  try {
+    claimed = JSON.parse(String(formData.get("attachments") ?? "[]"));
+  } catch {
+    claimed = [];
+  }
+  if (!Array.isArray(claimed)) return [];
+  const attachments: Attachment[] = [];
+  for (const item of claimed.slice(0, MAX_FILES_PER_MESSAGE)) {
+    const { pathname, name } = (item ?? {}) as {
+      pathname?: unknown;
+      name?: unknown;
+    };
+    const path = typeof pathname === "string" ? portalPath(pathname) : null;
+    if (!path || !path.startsWith(filesFolder(ref)) || path.includes("..")) {
+      throw new Error("That file isn't part of this project.");
+    }
+    const info = await fileInfo(path);
+    if (!info)
+      throw new Error(
+        "A file didn't finish uploading. Please attach it again.",
+      );
+    attachments.push({
+      path,
+      name: String(name ?? "").slice(0, 120) || "file",
+      size: info.size,
+      contentType: info.contentType,
+    });
+  }
+  return attachments;
 }
 
 export async function updateVideoAction(formData: FormData) {

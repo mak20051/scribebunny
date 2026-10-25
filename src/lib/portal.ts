@@ -5,6 +5,7 @@ import {
   sameKey,
   teamOrderLink,
 } from "@/lib/access";
+import { filesFolder, type Attachment } from "@/lib/attachments";
 import { sendCustomerEmail } from "@/lib/email";
 import {
   alertEmail,
@@ -16,7 +17,13 @@ import { findVideoPackage, formatUsd, VIDEO_SPEC } from "@/lib/packages";
 import type { Order } from "@/lib/payments";
 import { keyMatches, sign } from "@/lib/signing";
 import { SITE_URL } from "@/lib/site";
-import { listPaths, readJson, updateJson, writeJson } from "@/lib/store";
+import {
+  deleteFiles,
+  listPaths,
+  readJson,
+  updateJson,
+  writeJson,
+} from "@/lib/store";
 
 /**
  * Client portal: one page per paid order where the client and the studio
@@ -90,6 +97,8 @@ export type PortalMessage = {
   from: Role;
   author: string;
   text: string;
+  /** Screenshots and files, in the order they were attached. */
+  attachments?: Attachment[];
 };
 
 const STUDIO_AUTHOR = "Scribebunny studio";
@@ -137,6 +146,7 @@ export async function getPortalOrder(ref: string) {
 /** Put the demo project back to its sample data. */
 export async function resetDemo() {
   await writeJson(orderPath(DEMO_REF), demoOrder());
+  await deleteFiles(filesFolder(DEMO_REF));
 }
 
 /** A Five Videos order part-way through: one video of each status. */
@@ -299,7 +309,12 @@ export async function replaceClientKey(ref: string) {
   });
 }
 
-export async function addMessage(ref: string, from: Role, text: string) {
+export async function addMessage(
+  ref: string,
+  from: Role,
+  text: string,
+  attachments: Attachment[] = [],
+) {
   let message: PortalMessage | undefined;
   const order = await updateJson<PortalOrder>(orderPath(ref), (current) => {
     message = {
@@ -310,6 +325,7 @@ export async function addMessage(ref: string, from: Role, text: string) {
           ? STUDIO_AUTHOR
           : current.client.name || current.client.email,
       text,
+      ...(attachments.length ? { attachments } : {}),
     };
     current.messages.push(message);
     if (current.demo) current.messages = current.messages.slice(-40);
@@ -366,7 +382,8 @@ async function notifyMessage(order: PortalOrder, message: PortalMessage) {
       ["Order", `${order.ref} · ${order.packageName}`],
       ["From", message.author],
       ["Email", order.client.email],
-      ["Message", message.text],
+      ["Message", message.text || undefined],
+      ["Attachments", fileNames(message)],
     ];
     await alertTeam((member) => ({
       subject: `💬 ${title}`,
@@ -388,10 +405,17 @@ async function notifyMessage(order: PortalOrder, message: PortalMessage) {
     subject: `New message from Scribebunny about ${order.ref}`,
     eyebrow: `Order ${order.ref}`,
     heading: "You have a new message from the studio",
-    bodyHtml: `<p>${escapeHtml(message.text).replace(/\n/g, "<br>")}</p>`,
-    preheader: message.text.slice(0, 90),
+    bodyHtml: `${message.text ? `<p>${escapeHtml(message.text).replace(/\n/g, "<br>")}</p>` : ""}${
+      message.attachments?.length
+        ? `<p>📎 ${escapeHtml(fileNames(message)!)}<br>Open your portal to see ${message.attachments.length === 1 ? "it" : "them"}.</p>`
+        : ""
+    }`,
+    preheader: message.text.slice(0, 90) || `📎 ${fileNames(message)}`,
   });
 }
+
+const fileNames = (message: PortalMessage) =>
+  message.attachments?.map((file) => file.name).join(", ") || undefined;
 
 /** What the client is told when a video reaches each step. */
 const VIDEO_UPDATES: Record<

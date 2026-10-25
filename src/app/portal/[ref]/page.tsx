@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
-import { CircleCheck, ExternalLink, MessageCircle, Play } from "lucide-react";
+import {
+  ExternalLink,
+  FileText,
+  MessageCircle,
+  Paperclip,
+  Play,
+} from "lucide-react";
 import Link from "next/link";
 import {
-  postMessageAction,
   replaceClientLinkAction,
   resetDemoAction,
   setOrderStatusAction,
@@ -10,6 +15,7 @@ import {
 } from "@/app/portal/actions";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { LocalTime } from "@/components/local-time";
+import { MessageComposer } from "@/components/message-composer";
 import { PortalShell } from "@/components/portal-shell";
 import { SubmitButton } from "@/components/submit-button";
 import {
@@ -20,6 +26,13 @@ import {
   type PortalVideo,
 } from "@/lib/portal";
 import { EMAIL } from "@/lib/site";
+import { storeConfigured } from "@/lib/store";
+import {
+  formatBytes,
+  INLINE_TYPES,
+  isPreviewImage,
+  type Attachment,
+} from "@/lib/attachments";
 
 export const metadata: Metadata = {
   title: "Project Portal | Scribebunny",
@@ -38,6 +51,64 @@ const STATUS_STYLE: Record<PortalVideo["status"], string> = {
   "Ready for review": "bg-[#FF6B6B] text-white",
   Complete: "bg-green-600 text-white",
 };
+
+/** Screenshots as thumbnails; other files as download chips. */
+function MessageFiles({
+  files,
+  href,
+}: {
+  files: Attachment[];
+  href: (file: Attachment, download?: boolean) => string;
+}) {
+  const images = files.filter((file) => isPreviewImage(file.contentType));
+  const others = files.filter((file) => !isPreviewImage(file.contentType));
+  return (
+    <div className="mt-3 space-y-2">
+      {images.length ? (
+        <div className="flex flex-wrap gap-2">
+          {images.map((file) => (
+            <a
+              key={file.path}
+              href={href(file)}
+              target="_blank"
+              rel="noreferrer"
+              className="block overflow-hidden rounded-xl border-2 border-gray-800 bg-white"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element -- private files, served by the portal */}
+              <img
+                src={href(file)}
+                alt={file.name}
+                loading="lazy"
+                className="h-32 w-auto max-w-[14rem] object-cover"
+              />
+            </a>
+          ))}
+        </div>
+      ) : null}
+      {others.map((file) => {
+        const opens = INLINE_TYPES.includes(file.contentType);
+        const Icon = opens ? FileText : Paperclip;
+        return (
+          <a
+            key={file.path}
+            href={href(file, !opens)}
+            {...(opens ? { target: "_blank", rel: "noreferrer" } : {})}
+            className="flex max-w-full items-center gap-2 rounded-xl border-2 border-gray-800 bg-white px-3 py-2 text-base font-semibold text-gray-800 hover:bg-gray-50"
+          >
+            <Icon
+              className="h-5 w-5 shrink-0 text-[#FF3333]"
+              aria-hidden="true"
+            />
+            <span className="truncate">{file.name}</span>
+            <span className="shrink-0 text-sm font-normal text-gray-600">
+              {formatBytes(file.size)}
+            </span>
+          </a>
+        );
+      })}
+    </div>
+  );
+}
 
 function Hidden({ orderRef, k }: { orderRef: string; k: string }) {
   return (
@@ -281,9 +352,19 @@ export default async function PortalOrderPage({ params, searchParams }: Props) {
                       <p className="text-sm font-bold text-gray-600">
                         {message.author} · <LocalTime iso={message.at} />
                       </p>
-                      <p className="mt-1 whitespace-pre-wrap text-gray-800">
-                        {message.text}
-                      </p>
+                      {message.text ? (
+                        <p className="mt-1 whitespace-pre-wrap text-gray-800">
+                          {message.text}
+                        </p>
+                      ) : null}
+                      {message.attachments?.length ? (
+                        <MessageFiles
+                          files={message.attachments}
+                          href={(file, download) =>
+                            `/portal/${ref}/file?k=${encodeURIComponent(k)}&p=${encodeURIComponent(file.path)}${download ? "&download=1" : ""}`
+                          }
+                        />
+                      ) : null}
                     </div>
                   </li>
                 );
@@ -297,44 +378,22 @@ export default async function PortalOrderPage({ params, searchParams }: Props) {
             </p>
           )}
 
-          <form
-            action={postMessageAction}
-            className="mt-6 space-y-3 border-t-2 border-dashed border-gray-200 pt-6"
-          >
-            <Hidden orderRef={ref} k={k} />
-            <label htmlFor="message" className="sr-only">
-              Your message
-            </label>
-            <textarea
-              id="message"
-              name="message"
-              required
-              rows={4}
-              placeholder={
-                isTeam
-                  ? "Write to the client…"
-                  : "Your website, what the video should explain, who it's for, and links to any brand files…"
-              }
-              className="form-input"
-            />
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="flex items-start gap-2 text-base text-gray-600">
-                <CircleCheck
-                  className="mt-0.5 h-5 w-5 shrink-0 text-[#FF3333]"
-                  aria-hidden="true"
-                />
-                {isTeam
-                  ? "The client gets an email with your message."
-                  : "We reply within 24 hours, and you'll get an email when we do."}
-              </p>
-              <SubmitButton
-                pendingLabel="Sending…"
-                className="btn-primary w-full sm:w-auto"
-              >
-                Send message
-              </SubmitButton>
-            </div>
-          </form>
+          <MessageComposer
+            orderRef={ref}
+            k={k}
+            demo={Boolean(order.demo)}
+            directUpload={storeConfigured}
+            placeholder={
+              isTeam
+                ? "Write to the client…"
+                : "Your website, what the video should explain, who it's for, and links to any brand files…"
+            }
+            note={
+              isTeam
+                ? "The client gets an email with your message."
+                : "We reply within 24 hours, and you'll get an email when we do."
+            }
+          />
         </div>
       </section>
       <section className="mt-12">
