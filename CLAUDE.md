@@ -56,6 +56,16 @@ Every paid order opens a portal. Links carry random keys, unique per person
 Every studio update emails the client: messages, each video status change, new
 video links, and the project being completed or reopened.
 
+After delivery (`src/lib/launch.ts`, `src/components/launch-kit.tsx`): once a
+video is Complete the portal shows "Launch your video" (`#launch`): a six-step
+checklist the client ticks, a review form (`#review`; the team gets an alert,
+and `canFeature` records permission to use it on the site), and "Order your
+next video". Marking the project complete sets `completedAt`; a daily Vercel
+cron (`vercel.json`, `/api/cron/follow-ups`, 16:00 UTC) sends the day 7 email
+(checklist and review request) and the day 30 email (results, review, order
+next), each once per order and never for the demo. Set `CRON_SECRET` in Vercel
+so only the scheduler can call it (it is safe to call either way).
+
 Messages can carry screenshots and files (`src/lib/attachments.ts`): attach,
 paste or drop, up to 10 per message and 50 MB each. Browsers upload straight to
 the Blob store at `portal/files/<ref>/` (`/api/portal/upload` only checks the

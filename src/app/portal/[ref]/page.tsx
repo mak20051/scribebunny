@@ -14,6 +14,7 @@ import {
   updateVideoAction,
 } from "@/app/portal/actions";
 import { AutoRefresh } from "@/components/auto-refresh";
+import { LaunchKit } from "@/components/launch-kit";
 import { LocalTime } from "@/components/local-time";
 import { MessageComposer } from "@/components/message-composer";
 import { PortalShell } from "@/components/portal-shell";
@@ -151,6 +152,13 @@ export default async function PortalOrderPage({ params, searchParams }: Props) {
     (video) => video.status === "Complete",
   ).length;
   const firstName = order.client.name.split(" ")[0] || "there";
+  // Once a video is complete the launch kit appears: first on a finished
+  // project, after the videos while others are still in progress.
+  const launchKit = (
+    <LaunchKit order={order} role={role} orderRef={ref} k={k} />
+  );
+  const launchFirst = order.status === "complete";
+  const launchReady = completed > 0;
 
   return (
     <PortalShell label={isTeam ? "Studio view" : "Client portal"}>
@@ -327,6 +335,7 @@ export default async function PortalOrderPage({ params, searchParams }: Props) {
           </>
         ) : null}
       </section>
+      {launchFirst ? launchKit : null}
 
       <section className="mt-12">
         <h2 className="font-display flex items-center gap-3 text-3xl font-bold text-gray-800">
@@ -501,6 +510,7 @@ export default async function PortalOrderPage({ params, searchParams }: Props) {
           })}
         </div>
       </section>
+      {launchReady && !launchFirst ? launchKit : null}
 
       {!isTeam ? (
         <p className="mt-10 flex items-center justify-center gap-2 text-center text-base text-gray-600">

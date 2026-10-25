@@ -7,6 +7,7 @@ import {
   type Attachment,
 } from "@/lib/attachments";
 import { fileInfo, portalPath } from "@/lib/store";
+import { saveReview, toggleLaunchStep } from "@/lib/launch";
 import { redirect } from "next/navigation";
 import {
   memberForKey,
@@ -159,4 +160,34 @@ export async function replaceTeamKeyAction(formData: FormData) {
   redirect(
     `/portal/access?k=${key}&done=replaced&who=${encodeURIComponent(email)}`,
   );
+}
+
+/** Launch checklist: the client ticks or unticks a step. */
+export async function toggleLaunchStepAction(formData: FormData) {
+  const { ref, role } = await authorize(formData);
+  if (role !== "client")
+    throw new Error("Only the client ticks their checklist.");
+  await toggleLaunchStep(ref, field(formData, "step", 40));
+  revalidatePath(`/portal/${ref}`);
+}
+
+/** The client's review, in their own words. */
+export async function submitReviewAction(formData: FormData) {
+  const { ref, role } = await authorize(formData);
+  if (role !== "client") throw new Error("Only the client can leave a review.");
+  const rating = Number(field(formData, "rating", 1));
+  const quote = field(formData, "quote", 1200);
+  const name = field(formData, "name", 120);
+  if (!(rating >= 1 && rating <= 5) || !quote || !name) {
+    throw new Error("Please add a rating, a few words and your name.");
+  }
+  await saveReview(ref, {
+    rating,
+    quote,
+    name,
+    role: field(formData, "role", 120) || undefined,
+    company: field(formData, "company", 120) || undefined,
+    canFeature: formData.get("canFeature") === "on",
+  });
+  revalidatePath(`/portal/${ref}`);
 }

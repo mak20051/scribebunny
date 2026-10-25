@@ -6,6 +6,7 @@ import {
   teamOrderLink,
 } from "@/lib/access";
 import { filesFolder, type Attachment } from "@/lib/attachments";
+import type { Review } from "@/lib/launch";
 import { sendCustomerEmail } from "@/lib/email";
 import {
   alertEmail,
@@ -89,6 +90,13 @@ export type PortalOrder = {
   messages: PortalMessage[];
   /** Random key in the client's link; missing on orders before 2026-10-25. */
   clientKey?: string;
+  /** First time the project was marked complete; starts the follow-up emails. */
+  completedAt?: string;
+  /** Launch checklist steps the client has ticked (lib/launch.ts). */
+  launch?: { done: string[] };
+  /** When each follow-up email went out. */
+  followUps?: { day7?: string; day30?: string };
+  review?: Review;
   /** The sample project: no emails, not listed, not counted. */
   demo?: boolean;
 };
@@ -108,6 +116,9 @@ const STUDIO_AUTHOR = "Scribebunny studio";
 export function clientLink(order: PortalOrder) {
   return `${SITE_URL}${clientPath(order)}`;
 }
+
+/** The launch kit in the client's portal: checklist, review, order next. */
+export const launchLink = (order: PortalOrder) => `${clientLink(order)}#launch`;
 
 export const clientPath = (order: PortalOrder) =>
   `/portal/${order.ref}?k=${order.clientKey ?? sign(`client|${order.ref}`)}`;
@@ -299,6 +310,12 @@ export async function openPortal(order: Order): Promise<PortalOrder> {
   return (await getPortalOrder(portal.ref)) ?? portal;
 }
 
+/** Change an order and save it, retrying if someone else saved first. */
+export const updateOrder = (
+  ref: string,
+  change: (order: PortalOrder) => void,
+) => updateJson<PortalOrder>(orderPath(ref), change);
+
 /** A new client link for an order (the old one stops working), emailed to the client. */
 export async function replaceClientKey(ref: string) {
   const order = await updateJson<PortalOrder>(orderPath(ref), (current) => {
@@ -369,6 +386,7 @@ export async function setOrderStatus(
     changed = current.status !== status;
     current.status = status;
     if (status === "complete") {
+      current.completedAt ??= new Date().toISOString();
       for (const video of current.videos) {
         if (video.status !== "Complete") {
           video.status = "Complete";
@@ -450,8 +468,8 @@ const VIDEO_UPDATES: Record<
   },
   Complete: {
     heading: "Your video is complete!",
-    body: "is finished and ready to use. You'll find it in your portal.",
-    preheader: "It's yours to use.",
+    body: "is finished and ready to use. You'll find it in your portal, with a launch checklist: six quick ways to get it seen and turn views into customers.",
+    preheader: "It's yours to use. Here's how to launch it.",
   },
 };
 
@@ -475,6 +493,14 @@ async function notifyVideo(
       ? `<p><strong>${escapeHtml(video.title)}</strong> ${escapeHtml(update.body)}</p>`
       : `<p>We've added a new link for <strong>${escapeHtml(video.title)}</strong>. Watch it in your portal.</p>`,
     preheader: statusChanged ? update.preheader : "Watch it in your portal.",
+    ...(video.status === "Complete"
+      ? {
+          button: {
+            label: "See your launch checklist",
+            href: launchLink(order),
+          },
+        }
+      : {}),
   });
 }
 
@@ -486,8 +512,10 @@ async function notifyOrderStatus(order: PortalOrder) {
       eyebrow: `Order ${order.ref}`,
       heading: "That's a wrap!",
       bodyHtml:
-        "<p>Every video in your order is complete. Thank you for letting us draw your story. Your videos stay in your portal whenever you need them.</p>",
-      preheader: "Every video in your order is complete.",
+        "<p>Every video in your order is complete. Thank you for letting us draw your story. Your videos stay in your portal whenever you need them.</p><p>Next, launch them: your portal has a checklist with six quick ways to get them seen and turn views into customers.</p>",
+      preheader:
+        "Every video in your order is complete. Here's how to launch them.",
+      button: { label: "See your launch checklist", href: launchLink(order) },
     });
     return;
   }
@@ -501,7 +529,8 @@ async function notifyOrderStatus(order: PortalOrder) {
   });
 }
 
-async function emailClient(
+/** A branded email to the order's client; the button opens their portal unless given another. */
+export async function emailClient(
   order: PortalOrder,
   content: {
     subject: string;
@@ -509,11 +538,16 @@ async function emailClient(
     heading: string;
     bodyHtml: string;
     preheader: string;
+    button?: { label: string; href: string };
   },
 ) {
   if (!order.client.email) return;
   const first = escapeHtml(order.client.name.split(" ")[0] || "there");
-  const link = clientLink(order);
+  const button = content.button ?? {
+    label: "Open your project portal",
+    href: clientLink(order),
+  };
+  const link = button.href;
   await sendCustomerEmail({
     to: [order.client.email],
     subject: content.subject,
@@ -522,9 +556,9 @@ async function emailClient(
       heading: content.heading,
       bodyHtml: `<p>Hi ${first},</p>${content.bodyHtml}`,
       preheader: content.preheader,
-      button: { label: "Open your project portal", href: link },
+      button,
       afterButton: "Or simply reply to this email.",
     }),
-    text: `Hi ${order.client.name.split(" ")[0] || "there"},\n\n${content.heading}\n\nOpen your project portal: ${link}\n\nThe Scribebunny studio`,
+    text: `Hi ${order.client.name.split(" ")[0] || "there"},\n\n${content.heading}\n\n${button.label}: ${link}\n\nThe Scribebunny studio`,
   });
 }
