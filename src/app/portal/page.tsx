@@ -6,7 +6,7 @@ import { SubmitButton } from "@/components/submit-button";
 import { resendTeamLinkAction } from "@/app/portal/actions";
 import { memberForKey } from "@/lib/access";
 import { listConceptRequests } from "@/lib/concepts";
-import { listPortalOrders } from "@/lib/portal";
+import { DEMO_REF, listPortalOrders } from "@/lib/portal";
 
 export const metadata: Metadata = {
   title: "Orders | Scribebunny Studio",
@@ -78,22 +78,30 @@ export default async function PortalDashboardPage({ searchParams }: Props) {
         <h1 className="font-display text-4xl font-bold text-gray-800">
           Orders
         </h1>
-        {member.owner ? (
-          <div className="flex flex-wrap gap-3">
-            <Link
-              href={`/portal/growth?k=${member.key}`}
-              className="btn-secondary"
-            >
-              Growth board
-            </Link>
-            <Link
-              href={`/portal/access?k=${member.key}`}
-              className="btn-secondary"
-            >
-              Team access
-            </Link>
-          </div>
-        ) : null}
+        <div className="flex flex-wrap gap-3">
+          {member.owner ? (
+            <>
+              <Link
+                href={`/portal/growth?k=${member.key}`}
+                className="btn-secondary"
+              >
+                Growth board
+              </Link>
+              <Link
+                href={`/portal/access?k=${member.key}`}
+                className="btn-secondary"
+              >
+                Team access
+              </Link>
+            </>
+          ) : null}
+          <Link
+            href={`/portal/${DEMO_REF}?k=${member.key}`}
+            className="btn-secondary"
+          >
+            Demo project
+          </Link>
+        </div>
       </div>
       <p className="mt-2 text-lg text-gray-700">
         {open.length} in progress · {done.length} complete

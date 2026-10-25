@@ -20,7 +20,7 @@ import { PortalShell } from "@/components/portal-shell";
 import { SubmitButton } from "@/components/submit-button";
 import {
   clientLink,
-  DEMO_REF,
+  clientPath,
   openOrder,
   VIDEO_STATUSES,
   type PortalVideo,
@@ -162,12 +162,14 @@ export default async function PortalOrderPage({ params, searchParams }: Props) {
             videos freely. Nothing here emails anyone.
           </p>
           <div className="flex flex-wrap items-center gap-4">
-            <Link
-              href={`/portal/${DEMO_REF}?k=${isTeam ? "client" : "team"}`}
-              className="text-base font-bold text-[#FF3333] underline"
-            >
-              {isTeam ? "See the client view" : "See the studio view"}
-            </Link>
+            {isTeam ? (
+              <Link
+                href={clientPath(order)}
+                className="text-base font-bold text-[#FF3333] underline"
+              >
+                See the client view
+              </Link>
+            ) : null}
             <form action={resetDemoAction}>
               <SubmitButton pendingLabel="Resetting…" className="btn-secondary">
                 Reset demo

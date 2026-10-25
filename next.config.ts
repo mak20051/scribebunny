@@ -1,7 +1,22 @@
 import type { NextConfig } from "next";
+import { PRIVATE_PATHS } from "./src/lib/private-paths";
+
+/** Private pages: never indexed, cached by search engines, or named in a Referer. */
+const privateHeaders = [
+  { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive, nosnippet" },
+  { key: "Referrer-Policy", value: "no-referrer" },
+];
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  async headers() {
+    return PRIVATE_PATHS.flatMap((path) => {
+      const base = path.replace(/\/$/, "");
+      return [
+        { source: base, headers: privateHeaders },
+        { source: `${base}/:path*`, headers: privateHeaders },
+      ];
+    });
+  },
 };
 
 export default nextConfig;

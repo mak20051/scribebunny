@@ -42,9 +42,10 @@ import {
  * Every studio update emails the client: messages, each video status change,
  * new video links, and the project being completed or reopened.
  *
- * The demo project (SB-DEMO) is the exception: sample data at demo/SB-DEMO.json,
- * open to anyone with /portal/SB-DEMO?k=client or ?k=team, never emails anyone,
- * and stays out of the orders list and the growth board.
+ * The demo project (SB-DEMO) is sample data at demo/SB-DEMO.json: opened like any
+ * order (a team member's key, or its own random client key, from the dashboard's
+ * Demo project button), but it never emails anyone and stays out of the orders
+ * list and the growth board.
  */
 
 export const VIDEO_STATUSES = [
@@ -105,20 +106,18 @@ const STUDIO_AUTHOR = "Scribebunny studio";
 
 /** The client's private link to their order. */
 export function clientLink(order: PortalOrder) {
-  const key = order.demo
-    ? "client"
-    : (order.clientKey ?? sign(`client|${order.ref}`));
-  return `${SITE_URL}/portal/${order.ref}?k=${key}`;
+  return `${SITE_URL}${clientPath(order)}`;
 }
+
+export const clientPath = (order: PortalOrder) =>
+  `/portal/${order.ref}?k=${order.clientKey ?? sign(`client|${order.ref}`)}`;
 
 /** The order, and who this key opens it as: any team member, or its client. */
 export async function openOrder(ref: string, key?: string) {
   const order = await getPortalOrder(ref);
   if (!order || !key) return null;
   let role: Role | null = null;
-  if (order.demo) {
-    role = key === "team" || key === "client" ? key : null;
-  } else if (await memberForKey(key)) {
+  if (await memberForKey(key)) {
     role = "team";
   } else if (
     order.clientKey
@@ -138,14 +137,20 @@ const orderPath = (ref: string) =>
 export async function getPortalOrder(ref: string) {
   if (!/^[A-Z0-9-]{3,40}$/.test(ref)) return null;
   const order = (await readJson<PortalOrder>(orderPath(ref)))?.value ?? null;
-  if (order || ref !== DEMO_REF) return order;
-  await writeJson(orderPath(ref), demoOrder(), { onlyIfNew: true });
+  if (ref !== DEMO_REF || order?.clientKey) return order;
+  // First visit, or a demo from before it had its own client key.
+  if (order) await writeJson(orderPath(ref), demoOrder());
+  else await writeJson(orderPath(ref), demoOrder(), { onlyIfNew: true });
   return (await readJson<PortalOrder>(orderPath(ref)))?.value ?? null;
 }
 
 /** Put the demo project back to its sample data. */
 export async function resetDemo() {
-  await writeJson(orderPath(DEMO_REF), demoOrder());
+  const current = await readJson<PortalOrder>(orderPath(DEMO_REF));
+  await writeJson(orderPath(DEMO_REF), {
+    ...demoOrder(),
+    clientKey: current?.value.clientKey ?? newKey(),
+  });
   await deleteFiles(filesFolder(DEMO_REF));
 }
 
@@ -182,6 +187,7 @@ function demoOrder(): PortalOrder {
   return {
     ref: DEMO_REF,
     demo: true,
+    clientKey: newKey(),
     createdAt: ago(120),
     status: "active",
     packageName: `${five.name} package`,

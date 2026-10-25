@@ -1,11 +1,18 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useEffect } from "react";
+import { isPrivatePath } from "@/lib/private-paths";
 
 const PIXEL_ID = "133832099812863";
 
+/** Not on private pages: their addresses carry portal keys and order details. */
 export function FacebookPixel() {
+  const pathname = usePathname();
+  const skip = isPrivatePath(pathname);
+
   useEffect(() => {
+    if (skip || (window as { fbq?: unknown }).fbq) return;
     const script = document.createElement("script");
     script.nonce = PIXEL_ID;
     script.innerHTML = `
@@ -25,7 +32,7 @@ export function FacebookPixel() {
     const noscript = document.createElement("noscript");
     noscript.innerHTML = `<img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=${PIXEL_ID}&ev=PageView&noscript=1" />`;
     document.body.appendChild(noscript);
-  }, []);
+  }, [skip]);
 
   return null;
 }
