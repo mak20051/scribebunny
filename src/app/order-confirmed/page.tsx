@@ -4,7 +4,7 @@ import Link from "next/link";
 import { IconTile } from "@/components/icon-tile";
 import { SiteShell } from "@/components/site-shell";
 import { VIDEO_SPEC } from "@/lib/packages";
-import { portalLink } from "@/lib/portal";
+import { clientLink, getPortalOrder } from "@/lib/portal";
 import {
   describeOrder,
   fulfil,
@@ -56,8 +56,9 @@ export default async function OrderConfirmedPage({ searchParams }: Props) {
   const { session_id: sessionId } = await searchParams;
   const order = await loadOrder(sessionId);
   const paid = order?.paid ?? false;
-  const portalHref = order?.paid
-    ? portalLink(order.reference, "client")
+  const portal = paid ? await getPortalOrder(order!.reference) : null;
+  const portalHref = portal
+    ? clientLink(portal)
     : `mailto:${EMAIL}?subject=${encodeURIComponent("Brief for my video")}`;
 
   return (

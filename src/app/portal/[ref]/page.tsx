@@ -3,6 +3,7 @@ import { CircleCheck, ExternalLink, MessageCircle, Play } from "lucide-react";
 import Link from "next/link";
 import {
   postMessageAction,
+  replaceClientLinkAction,
   resetDemoAction,
   setOrderStatusAction,
   updateVideoAction,
@@ -12,9 +13,9 @@ import { LocalTime } from "@/components/local-time";
 import { PortalShell } from "@/components/portal-shell";
 import { SubmitButton } from "@/components/submit-button";
 import {
+  clientLink,
   DEMO_REF,
-  getPortalOrder,
-  roleFor,
+  openOrder,
   VIDEO_STATUSES,
   type PortalVideo,
 } from "@/lib/portal";
@@ -50,10 +51,9 @@ function Hidden({ orderRef, k }: { orderRef: string; k: string }) {
 export default async function PortalOrderPage({ params, searchParams }: Props) {
   const { ref } = await params;
   const { k = "" } = await searchParams;
-  const role = roleFor(ref, k);
-  const order = role ? await getPortalOrder(ref) : null;
+  const opened = await openOrder(ref, k);
 
-  if (!role || !order) {
+  if (!opened) {
     return (
       <PortalShell label="Client portal">
         <div className="mx-auto max-w-xl rounded-[1.75rem] border-4 border-gray-800 bg-white p-10 text-center shadow-[10px_10px_0_#FFE66D]">
@@ -73,6 +73,7 @@ export default async function PortalOrderPage({ params, searchParams }: Props) {
     );
   }
 
+  const { order, role } = opened;
   const { messages } = order;
   const isTeam = role === "team";
   const completed = order.videos.filter(
@@ -148,80 +149,109 @@ export default async function PortalOrderPage({ params, searchParams }: Props) {
         </dl>
 
         {isTeam ? (
-          <div className="mt-8 flex flex-wrap items-end justify-between gap-6 border-t-2 border-dashed border-gray-200 pt-6">
-            <dl className="grid gap-x-8 gap-y-2 text-base text-gray-700 sm:grid-cols-2">
-              <div>
-                <dt className="inline font-bold">Email: </dt>
-                <dd className="inline">
-                  <a
-                    href={`mailto:${order.client.email}`}
-                    className="text-[#FF3333] underline"
+          <>
+            <div className="mt-8 flex flex-wrap items-end justify-between gap-6 border-t-2 border-dashed border-gray-200 pt-6">
+              <dl className="grid gap-x-8 gap-y-2 text-base text-gray-700 sm:grid-cols-2">
+                <div>
+                  <dt className="inline font-bold">Email: </dt>
+                  <dd className="inline">
+                    <a
+                      href={`mailto:${order.client.email}`}
+                      className="text-[#FF3333] underline"
+                    >
+                      {order.client.email}
+                    </a>
+                  </dd>
+                </div>
+                {order.client.phone ? (
+                  <div>
+                    <dt className="inline font-bold">Phone: </dt>
+                    <dd className="inline">{order.client.phone}</dd>
+                  </div>
+                ) : null}
+                {order.client.website ? (
+                  <div>
+                    <dt className="inline font-bold">Website: </dt>
+                    <dd className="inline">{order.client.website}</dd>
+                  </div>
+                ) : null}
+                <div>
+                  <dt className="inline font-bold">Ordered: </dt>
+                  <dd className="inline">
+                    <LocalTime iso={order.createdAt} />
+                  </dd>
+                </div>
+                {order.invoiceUrl ? (
+                  <div>
+                    <a
+                      href={order.invoiceUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[#FF3333] underline"
+                    >
+                      Invoice
+                    </a>
+                  </div>
+                ) : null}
+                {order.dashboardUrl ? (
+                  <div>
+                    <a
+                      href={order.dashboardUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[#FF3333] underline"
+                    >
+                      Stripe payment
+                    </a>
+                  </div>
+                ) : null}
+              </dl>
+              <form action={setOrderStatusAction} className="w-full sm:w-auto">
+                <Hidden orderRef={ref} k={k} />
+                <input
+                  type="hidden"
+                  name="status"
+                  value={order.status === "complete" ? "active" : "complete"}
+                />
+                <SubmitButton
+                  className={`w-full sm:w-auto ${
+                    order.status === "complete"
+                      ? "btn-secondary"
+                      : "btn-primary"
+                  }`}
+                >
+                  {order.status === "complete"
+                    ? "Reopen project"
+                    : "Mark project complete"}
+                </SubmitButton>
+              </form>
+            </div>
+            <div className="mt-6 border-t-2 border-dashed border-gray-200 pt-6">
+              <label className="block text-base font-bold text-gray-800">
+                Client&rsquo;s private link
+                <input
+                  readOnly
+                  value={clientLink(order)}
+                  className="form-input mt-1 font-mono text-sm"
+                />
+              </label>
+              <p className="mt-2 text-base text-gray-600">
+                Share it only with the client. Every update you make here is
+                emailed to them too.
+              </p>
+              {order.demo ? null : (
+                <form action={replaceClientLinkAction} className="mt-3">
+                  <Hidden orderRef={ref} k={k} />
+                  <SubmitButton
+                    pendingLabel="Sending…"
+                    className="btn-secondary"
                   >
-                    {order.client.email}
-                  </a>
-                </dd>
-              </div>
-              {order.client.phone ? (
-                <div>
-                  <dt className="inline font-bold">Phone: </dt>
-                  <dd className="inline">{order.client.phone}</dd>
-                </div>
-              ) : null}
-              {order.client.website ? (
-                <div>
-                  <dt className="inline font-bold">Website: </dt>
-                  <dd className="inline">{order.client.website}</dd>
-                </div>
-              ) : null}
-              <div>
-                <dt className="inline font-bold">Ordered: </dt>
-                <dd className="inline">
-                  <LocalTime iso={order.createdAt} />
-                </dd>
-              </div>
-              {order.invoiceUrl ? (
-                <div>
-                  <a
-                    href={order.invoiceUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[#FF3333] underline"
-                  >
-                    Invoice
-                  </a>
-                </div>
-              ) : null}
-              {order.dashboardUrl ? (
-                <div>
-                  <a
-                    href={order.dashboardUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[#FF3333] underline"
-                  >
-                    Stripe payment
-                  </a>
-                </div>
-              ) : null}
-            </dl>
-            <form action={setOrderStatusAction} className="w-full sm:w-auto">
-              <Hidden orderRef={ref} k={k} />
-              <input
-                type="hidden"
-                name="status"
-                value={order.status === "complete" ? "active" : "complete"}
-              />
-              <SubmitButton
-                className={`w-full sm:w-auto ${
-                  order.status === "complete" ? "btn-secondary" : "btn-primary"
-                }`}
-              >
-                {order.status === "complete"
-                  ? "Reopen project"
-                  : "Mark project complete"}
-              </SubmitButton>
-            </form>
-          </div>
+                    Send the client a new link
+                  </SubmitButton>
+                </form>
+              )}
+            </div>
+          </>
         ) : null}
       </section>
 
@@ -399,9 +429,8 @@ export default async function PortalOrderPage({ params, searchParams }: Props) {
                         Save video
                       </SubmitButton>
                       <p className="text-sm text-gray-600">
-                        The client gets an email when a video moves to
-                        &ldquo;Ready for review&rdquo; or
-                        &ldquo;Complete&rdquo;.
+                        The client gets an email whenever the status changes or
+                        a new link is added.
                       </p>
                     </form>
                   </details>

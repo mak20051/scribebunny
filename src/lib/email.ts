@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import nodemailer from "nodemailer";
-import { EMAIL, OWNER_EMAIL, TEAM_EMAILS } from "@/lib/site";
+import { EMAIL, TEAM_EMAILS } from "@/lib/site";
 
 /**
  * Sending email. SMTP settings come from env vars (SMTP_HOST, SMTP_PORT,
@@ -11,7 +11,7 @@ import { EMAIL, OWNER_EMAIL, TEAM_EMAILS } from "@/lib/site";
  * written as an .html file to EMAIL_PREVIEW_DIR when that is set.
  */
 
-type Message = {
+export type Message = {
   to: string[];
   subject: string;
   html: string;
@@ -31,7 +31,7 @@ const transporter = process.env.SMTP_HOST
     })
   : null;
 
-async function send(message: Message) {
+export async function send(message: Message) {
   if (!transporter) {
     console.log(
       `[email preview] to=${message.to.join(", ")} subject="${message.subject}"`,
@@ -39,7 +39,7 @@ async function send(message: Message) {
     const dir = process.env.EMAIL_PREVIEW_DIR;
     if (dir) {
       await mkdir(dir, { recursive: true });
-      const name = `${Date.now()}-${message.subject.replace(/[^a-z0-9]+/gi, "-").slice(0, 60)}.html`;
+      const name = `${Date.now()}-${message.to[0]}-${message.subject.replace(/[^a-z0-9]+/gi, "-").slice(0, 60)}.html`;
       await writeFile(join(dir, name), message.html);
     }
     return;
@@ -52,14 +52,12 @@ async function send(message: Message) {
   });
 }
 
-/** To the team (TEAM_EMAILS); replies go to the customer when we know them. */
+/**
+ * To the whole team at once, for alerts with no portal links (form leads).
+ * Alerts that carry links go to each person separately: alertTeam() in lib/access.ts.
+ */
 export function sendTeamEmail(message: Omit<Message, "to">) {
   return send({ ...message, to: TEAM_EMAILS });
-}
-
-/** To the owner only (OWNER_EMAIL), for things the team doesn't see. */
-export function sendOwnerEmail(message: Omit<Message, "to">) {
-  return send({ ...message, to: [OWNER_EMAIL] });
 }
 
 /** To a customer; replies come back to the studio inbox. */

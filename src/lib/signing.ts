@@ -1,11 +1,11 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 
 /**
- * Signed link keys for the client portal and the concept review pages.
+ * Signed (HMAC) link keys, kept only for client links on orders opened before
+ * 2026-10-25. New links use random keys (lib/access.ts, PortalOrder.clientKey).
  *
- * No passwords: a link carries an HMAC of what it grants (e.g. "team|SB-…"),
- * so it can't be guessed or edited. The key comes from PORTAL_SECRET, or is
- * derived from STRIPE_SECRET_KEY / SMTP_PASS. Rotating it revokes every link.
+ * The key comes from PORTAL_SECRET, or is derived from STRIPE_SECRET_KEY /
+ * SMTP_PASS. Rotating it only affects those older client links.
  */
 
 function secret(): Buffer {
@@ -35,9 +35,3 @@ export function keyMatches(key: string | undefined, subject: string) {
   const given = Buffer.from(key);
   return given.length === expected.length && timingSafeEqual(given, expected);
 }
-
-/** The studio's master key: opens every order and concept request as the team. */
-export const isAdminKey = (key?: string) => keyMatches(key, "admin");
-
-/** The owner's key: opens the growth board. The admin key does not. */
-export const isGrowthKey = (key?: string) => keyMatches(key, "growth");

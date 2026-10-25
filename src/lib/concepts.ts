@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
-import { sendCustomerEmail, sendTeamEmail } from "@/lib/email";
+import { alertTeam, conceptReviewLink } from "@/lib/access";
+import { sendCustomerEmail } from "@/lib/email";
 import {
   alertEmail,
   alertText,
@@ -8,7 +9,6 @@ import {
 } from "@/lib/email-layout";
 import { formatUsd, VIDEO_SPEC, videoPackages } from "@/lib/packages";
 import { researchWebsite, type WebsiteResearch } from "@/lib/research";
-import { isAdminKey, keyMatches, sign } from "@/lib/signing";
 import { CALENDLY_URL, SITE_URL } from "@/lib/site";
 import { listPaths, readJson, updateJson, writeJson } from "@/lib/store";
 
@@ -62,12 +62,6 @@ const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL || "deepseek-flash";
 
 const requestPath = (id: string) => `concepts/${id}.json`;
 
-export const conceptReviewLink = (id: string) =>
-  `${SITE_URL}/concepts/${id}?k=${sign(`concepts|${id}`)}`;
-
-export const canReviewConcepts = (id: string, key?: string) =>
-  keyMatches(key, `concepts|${id}`) || isAdminKey(key);
-
 export async function getConceptRequest(id: string) {
   if (!/^C-[A-Z0-9]{8}$/.test(id)) return null;
   return (await readJson<ConceptRequest>(requestPath(id)))?.value ?? null;
@@ -102,7 +96,7 @@ export async function requestConcepts(lead: ConceptRequest["lead"]) {
 
   const title = `Free concepts request from ${lead.name}`;
   const fields = leadFields(request);
-  await sendTeamEmail({
+  await alertTeam((member) => ({
     subject: `🎨 ${title}`,
     html: alertEmail({
       title,
@@ -110,12 +104,12 @@ export async function requestConcepts(lead: ConceptRequest["lead"]) {
       tone: "lead",
       link: {
         label: "Review the concepts",
-        href: conceptReviewLink(request.id),
+        href: conceptReviewLink(request.id, member),
       },
     }),
-    text: `${alertText(title, fields)}\n\nReview: ${conceptReviewLink(request.id)}`,
+    text: `${alertText(title, fields)}\n\nReview: ${conceptReviewLink(request.id, member)}`,
     replyTo: lead.email,
-  });
+  }));
   await sendCustomerEmail({
     to: [lead.email],
     subject: "Your 3 free video concepts are on our drawing board",
@@ -201,16 +195,19 @@ export async function draftConcepts(id: string) {
         ],
     ),
   ];
-  await sendTeamEmail({
+  await alertTeam((member) => ({
     subject: `${concepts.length ? "✅" : "⚠️"} ${title}`,
     html: alertEmail({
       title,
       fields,
       tone: "lead",
-      link: { label: "Review and send", href: conceptReviewLink(updated.id) },
+      link: {
+        label: "Review and send",
+        href: conceptReviewLink(updated.id, member),
+      },
     }),
-    text: `${alertText(title, fields)}\n\nReview: ${conceptReviewLink(updated.id)}`,
-  });
+    text: `${alertText(title, fields)}\n\nReview: ${conceptReviewLink(updated.id, member)}`,
+  }));
 }
 
 async function askDeepSeek(

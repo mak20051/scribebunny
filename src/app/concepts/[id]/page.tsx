@@ -6,11 +6,11 @@ import {
   sendConceptsAction,
 } from "@/app/concepts/actions";
 import { AutoRefresh } from "@/components/auto-refresh";
+import { memberForKey } from "@/lib/access";
 import { LocalTime } from "@/components/local-time";
 import { PortalShell } from "@/components/portal-shell";
 import { SubmitButton } from "@/components/submit-button";
 import {
-  canReviewConcepts,
   CONCEPT_STYLES,
   getConceptRequest,
   type Concept,
@@ -61,7 +61,7 @@ export default async function ConceptReviewPage({
 }: Props) {
   const { id } = await params;
   const { k = "" } = await searchParams;
-  const request = canReviewConcepts(id, k) ? await getConceptRequest(id) : null;
+  const request = (await memberForKey(k)) ? await getConceptRequest(id) : null;
 
   if (!request) {
     return (

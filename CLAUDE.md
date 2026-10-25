@@ -40,10 +40,21 @@ page for page at the time of the rebuild.
   (website research in `src/lib/research.ts`, DeepSeek drafting, studio review, send)
 
 ## Client portal
-Every paid order opens a portal. The confirmation email carries the client link,
-the team alert carries the team link and the "All orders" dashboard link. Links
-are HMAC-signed with `PORTAL_SECRET` (falls back to a key derived from
-`STRIPE_SECRET_KEY`); rotating it revokes every link. Portal data lives in the
+Every paid order opens a portal. Links carry random keys, unique per person
+(`src/lib/access.ts`):
+- Client: each order has its own `clientKey`, sent in the confirmation email.
+  "Send the client a new link" (studio view) replaces it and emails the client.
+- Team: everyone in `OWNER_EMAIL` + `TEAM_EMAILS` has their own key, stored at
+  `portal/access/team.json`. Alerts with links go to each person separately, with
+  their own key. A key opens the dashboard, every order and concept reviews; the
+  owner's also opens the growth board and Team access (`/portal/access`), where
+  one person's link can be resent or replaced. "Lost your link?" on `/portal`
+  emails a team member their link (once per 5 minutes).
+- Orders from before 2026-10-25 have no `clientKey` and keep their HMAC client
+  link (`src/lib/signing.ts`, `PORTAL_SECRET`) until it is replaced.
+
+Every studio update emails the client: messages, each video status change, new
+video links, and the project being completed or reopened. Portal data lives in the
 private Vercel Blob store `scribebunny-portal` (`BLOB_READ_WRITE_TOKEN`, Production
 and Preview), one JSON file per order at `portal/orders/<ref>.json`, updated with
 ETag compare-and-swap. Without the token the store is in-memory (local runs only).
@@ -63,10 +74,8 @@ never sent without a person clicking Send. Without the API key the team writes
 them by hand on the same page.
 
 ## Growth board
-`/portal/growth` is the owner's only. It opens with its own signed "growth" key
-(the team's admin link does not open it), which is emailed only to `OWNER_EMAIL`
-in `src/lib/site.ts`: press "Email the owner's link" on the locked page (at most
-one email every 10 minutes). It shows live numbers from the site's own records: enquiries (form leads at
+`/portal/growth` is the owner's only: it opens with the owner's own key (the
+Growth board button on the owner's dashboard). It shows live numbers from the site's own records: enquiries (form leads at
 `portal/leads/<id>.json` plus concept requests), concepts sent, paid orders,
 revenue (`amountCents` on each order), conversion rates, revenue by package, the
 last 8 weeks and recent activity. Only leads sent after this shipped are counted.

@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { memberForKey } from "@/lib/access";
 import {
-  canReviewConcepts,
   CONCEPT_STYLES,
   draftConcepts,
   saveConcepts,
@@ -16,10 +16,10 @@ function field(formData: FormData, name: string, max: number) {
     .slice(0, max);
 }
 
-/** Server actions are public endpoints, so every one re-checks the review key. */
-function authorize(formData: FormData) {
+/** Server actions are public endpoints, so every one re-checks the team key. */
+async function authorize(formData: FormData) {
   const id = field(formData, "id", 20);
-  if (!canReviewConcepts(id, field(formData, "k", 64))) {
+  if (!(await memberForKey(field(formData, "k", 64)))) {
     throw new Error("This review link is not allowed to do that.");
   }
   return id;
@@ -43,13 +43,13 @@ function readConcepts(formData: FormData): Concept[] {
 }
 
 export async function saveConceptsAction(formData: FormData) {
-  const id = authorize(formData);
+  const id = await authorize(formData);
   await saveConcepts(id, readConcepts(formData));
   revalidatePath(`/concepts/${id}`);
 }
 
 export async function sendConceptsAction(formData: FormData) {
-  const id = authorize(formData);
+  const id = await authorize(formData);
   const concepts = readConcepts(formData);
   await saveConcepts(id, concepts);
   const incomplete = concepts.some(
@@ -63,7 +63,7 @@ export async function sendConceptsAction(formData: FormData) {
 }
 
 export async function redraftConceptsAction(formData: FormData) {
-  const id = authorize(formData);
+  const id = await authorize(formData);
   await draftConcepts(id);
   revalidatePath(`/concepts/${id}`);
 }

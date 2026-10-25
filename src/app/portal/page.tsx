@@ -2,27 +2,65 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { LocalTime } from "@/components/local-time";
 import { PortalShell } from "@/components/portal-shell";
+import { SubmitButton } from "@/components/submit-button";
+import { resendTeamLinkAction } from "@/app/portal/actions";
+import { memberForKey } from "@/lib/access";
 import { listConceptRequests } from "@/lib/concepts";
 import { listPortalOrders } from "@/lib/portal";
-import { isAdminKey } from "@/lib/signing";
 
 export const metadata: Metadata = {
   title: "Orders | Scribebunny Studio",
   robots: { index: false, follow: false },
 };
 
-type Props = { searchParams: Promise<{ k?: string }> };
+type Props = { searchParams: Promise<{ k?: string; sent?: string }> };
 
-/** The studio's list of every order. Opened with the admin key from order alerts. */
+/** The studio's list of every order. Each team member opens it with their own key. */
 export default async function PortalDashboardPage({ searchParams }: Props) {
-  const { k = "" } = await searchParams;
-  if (!isAdminKey(k)) {
+  const { k = "", sent } = await searchParams;
+  const member = await memberForKey(k);
+  if (!member) {
     return (
       <PortalShell label="Studio">
-        <p className="text-center text-lg text-gray-700">
-          Open this page from the &ldquo;All orders&rdquo; link in an order
-          email.
-        </p>
+        <div className="mx-auto max-w-md text-center">
+          <h1 className="font-display text-3xl font-bold text-gray-800">
+            Studio dashboard
+          </h1>
+          <p className="mt-3 text-lg text-gray-700">
+            Open it from the &ldquo;All orders&rdquo; link in your own copy of
+            an order email.
+          </p>
+          {sent ? (
+            <p
+              role="status"
+              className="mt-6 text-lg font-semibold text-gray-800"
+            >
+              If that email is on the team, its private link is on the way.
+            </p>
+          ) : (
+            <form
+              action={resendTeamLinkAction}
+              className="mt-8 space-y-3 text-left"
+            >
+              <label className="block text-base font-semibold text-gray-700">
+                Lost your link? Enter your team email
+                <input
+                  name="email"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  className="form-input mt-1"
+                />
+              </label>
+              <SubmitButton
+                pendingLabel="Sending…"
+                className="btn-primary w-full"
+              >
+                Email me my link
+              </SubmitButton>
+            </form>
+          )}
+        </div>
       </PortalShell>
     );
   }
@@ -36,7 +74,27 @@ export default async function PortalDashboardPage({ searchParams }: Props) {
 
   return (
     <PortalShell label="Studio">
-      <h1 className="font-display text-4xl font-bold text-gray-800">Orders</h1>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="font-display text-4xl font-bold text-gray-800">
+          Orders
+        </h1>
+        {member.owner ? (
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href={`/portal/growth?k=${member.key}`}
+              className="btn-secondary"
+            >
+              Growth board
+            </Link>
+            <Link
+              href={`/portal/access?k=${member.key}`}
+              className="btn-secondary"
+            >
+              Team access
+            </Link>
+          </div>
+        ) : null}
+      </div>
       <p className="mt-2 text-lg text-gray-700">
         {open.length} in progress · {done.length} complete
       </p>

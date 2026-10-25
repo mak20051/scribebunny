@@ -1,5 +1,6 @@
 import Stripe from "stripe";
-import { sendCustomerEmail, sendTeamEmail } from "@/lib/email";
+import { alertTeam, dashboardLink, teamOrderLink } from "@/lib/access";
+import { sendCustomerEmail } from "@/lib/email";
 import {
   alertEmail,
   alertText,
@@ -14,7 +15,7 @@ import {
   VIDEO_SPEC,
   type VideoPackage,
 } from "@/lib/packages";
-import { dashboardLink, openPortal, portalLink } from "@/lib/portal";
+import { clientLink, openPortal } from "@/lib/portal";
 import { PARENT_COMPANY } from "@/lib/site";
 
 /**
@@ -217,7 +218,7 @@ export async function fulfil(sessionId: string) {
     order = await loadOrder(sessionId);
   }
 
-  await openPortal(order);
+  const portal = await openPortal(order);
   await sendOrderAlert(order);
   await stripe()
     .paymentIntents.update(paymentId, {
@@ -226,7 +227,7 @@ export async function fulfil(sessionId: string) {
     .catch((error) =>
       console.error("[payments] could not mark fulfilled:", error),
     );
-  await sendOrderConfirmation(order).catch((error) =>
+  await sendOrderConfirmation(order, clientLink(portal)).catch((error) =>
     console.error("[payments] customer confirmation failed:", error),
   );
   return order;
@@ -257,23 +258,23 @@ function orderFields(order: Order): [string, string | undefined][] {
 async function sendOrderAlert(order: Order) {
   const title = `New order: ${order.packageName} (${order.amount}) from ${order.name || order.email}`;
   const fields = orderFields(order);
-  await sendTeamEmail({
+  await alertTeam((member) => ({
     subject: `💰 ${title}`,
     html: alertEmail({
       title,
-      fields: [...fields, ["All orders", dashboardLink()]],
+      fields: [...fields, ["All orders", dashboardLink(member)]],
       tone: "paid",
       link: {
         label: "Open in the portal",
-        href: portalLink(order.reference, "team"),
+        href: teamOrderLink(order.reference, member),
       },
     }),
-    text: `${alertText(title, fields)}\n\nPortal: ${portalLink(order.reference, "team")}`,
+    text: `${alertText(title, fields)}\n\nPortal: ${teamOrderLink(order.reference, member)}`,
     replyTo: order.email || undefined,
-  });
+  }));
 }
 
-async function sendOrderConfirmation(order: Order) {
+async function sendOrderConfirmation(order: Order, portalUrl: string) {
   if (!order.email) return;
   const first = escapeHtml(order.name.split(" ")[0] || "there");
   const delivery =
@@ -310,11 +311,11 @@ ${summary}
         "Your project portal is ready. Send your brief and we'll start sketching.",
       button: {
         label: "Open your project portal",
-        href: portalLink(order.reference, "client"),
+        href: portalUrl,
       },
       afterButton:
         "Bookmark it: your portal is where we chat, share drafts, and deliver your videos.",
     }),
-    text: `Hi ${order.name.split(" ")[0] || "there"},\n\nThank you for your order (${order.reference}): ${order.packageName}, ${order.amount}.\n\nOpen your project portal to send your brief: ${portalLink(order.reference, "client")}\n\nWe'll write the script, sketch the storyboard, and deliver your video (${delivery}).\n\nThe Scribebunny studio`,
+    text: `Hi ${order.name.split(" ")[0] || "there"},\n\nThank you for your order (${order.reference}): ${order.packageName}, ${order.amount}.\n\nOpen your project portal to send your brief: ${portalUrl}\n\nWe'll write the script, sketch the storyboard, and deliver your video (${delivery}).\n\nThe Scribebunny studio`,
   });
 }

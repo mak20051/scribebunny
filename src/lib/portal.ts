@@ -1,4 +1,11 @@
-import { sendCustomerEmail, sendTeamEmail } from "@/lib/email";
+import {
+  alertTeam,
+  memberForKey,
+  newKey,
+  sameKey,
+  teamOrderLink,
+} from "@/lib/access";
+import { sendCustomerEmail } from "@/lib/email";
 import {
   alertEmail,
   alertText,
@@ -7,7 +14,7 @@ import {
 } from "@/lib/email-layout";
 import { findVideoPackage, formatUsd, VIDEO_SPEC } from "@/lib/packages";
 import type { Order } from "@/lib/payments";
-import { isAdminKey, keyMatches, sign } from "@/lib/signing";
+import { keyMatches, sign } from "@/lib/signing";
 import { SITE_URL } from "@/lib/site";
 import { listPaths, readJson, updateJson, writeJson } from "@/lib/store";
 
@@ -17,11 +24,16 @@ import { listPaths, readJson, updateJson, writeJson } from "@/lib/store";
  *
  *   paid order ─▶ openPortal()            private Blob store (lib/store.ts)
  *                   │                       orders/<ref>.json   details, videos, messages
- *                   ├─▶ client email  /portal/<ref>?k=<client key>
- *                   └─▶ team alert    /portal/<ref>?k=<team key>  and  /portal?k=<admin key>
+ *                   ├─▶ client email  /portal/<ref>?k=<the order's own random client key>
+ *                   └─▶ team alerts   /portal/<ref>?k=<each member's own key> (lib/access.ts)
  *
- * No passwords: each link carries an HMAC key for one role and one order, so
- * it can't be guessed or edited. Rotating PORTAL_SECRET revokes every link.
+ * No passwords: links carry random keys. "Send the client a new link" replaces
+ * one order's client key; the Team access page replaces one person's key.
+ * Orders opened before 2026-10-25 have no client key and keep their signed
+ * (HMAC) client link until it is replaced.
+ *
+ * Every studio update emails the client: messages, each video status change,
+ * new video links, and the project being completed or reopened.
  *
  * The demo project (SB-DEMO) is the exception: sample data at demo/SB-DEMO.json,
  * open to anyone with /portal/SB-DEMO?k=client or ?k=team, never emails anyone,
@@ -67,6 +79,8 @@ export type PortalOrder = {
   dashboardUrl?: string;
   videos: PortalVideo[];
   messages: PortalMessage[];
+  /** Random key in the client's link; missing on orders before 2026-10-25. */
+  clientKey?: string;
   /** The sample project: no emails, not listed, not counted. */
   demo?: boolean;
 };
@@ -80,18 +94,32 @@ export type PortalMessage = {
 
 const STUDIO_AUTHOR = "Scribebunny studio";
 
-/** Which role a key grants for this order, if any. The admin key opens every order as the team. */
-export function roleFor(ref: string, key?: string): Role | null {
-  if (ref === DEMO_REF && (key === "team" || key === "client")) return key;
-  if (keyMatches(key, `team|${ref}`) || isAdminKey(key)) return "team";
-  if (keyMatches(key, `client|${ref}`)) return "client";
-  return null;
+/** The client's private link to their order. */
+export function clientLink(order: PortalOrder) {
+  const key = order.demo
+    ? "client"
+    : (order.clientKey ?? sign(`client|${order.ref}`));
+  return `${SITE_URL}/portal/${order.ref}?k=${key}`;
 }
 
-export const portalLink = (ref: string, role: Role) =>
-  `${SITE_URL}/portal/${ref}?k=${ref === DEMO_REF ? role : sign(`${role}|${ref}`)}`;
-
-export const dashboardLink = () => `${SITE_URL}/portal?k=${sign("admin")}`;
+/** The order, and who this key opens it as: any team member, or its client. */
+export async function openOrder(ref: string, key?: string) {
+  const order = await getPortalOrder(ref);
+  if (!order || !key) return null;
+  let role: Role | null = null;
+  if (order.demo) {
+    role = key === "team" || key === "client" ? key : null;
+  } else if (await memberForKey(key)) {
+    role = "team";
+  } else if (
+    order.clientKey
+      ? sameKey(key, order.clientKey)
+      : keyMatches(key, `client|${order.ref}`)
+  ) {
+    role = "client";
+  }
+  return role ? { order, role } : null;
+}
 
 export const DEMO_REF = "SB-DEMO";
 
@@ -213,7 +241,7 @@ export async function listPortalOrders() {
 }
 
 /** Create the portal for a paid order. Safe to call again: the first call wins. */
-export async function openPortal(order: Order) {
+export async function openPortal(order: Order): Promise<PortalOrder> {
   const now = new Date().toISOString();
   const count = order.videoPackage?.videos ?? 1;
   const portal: PortalOrder = {
@@ -231,6 +259,7 @@ export async function openPortal(order: Order) {
       website: order.website,
     },
     topic: order.topic,
+    clientKey: newKey(),
     invoiceUrl: order.invoiceUrl,
     dashboardUrl: order.dashboardUrl,
     videos: Array.from({ length: count }, (_, index) => ({
@@ -251,6 +280,23 @@ export async function openPortal(order: Order) {
       : [],
   };
   await writeJson(orderPath(portal.ref), portal, { onlyIfNew: true });
+  return (await getPortalOrder(portal.ref)) ?? portal;
+}
+
+/** A new client link for an order (the old one stops working), emailed to the client. */
+export async function replaceClientKey(ref: string) {
+  const order = await updateJson<PortalOrder>(orderPath(ref), (current) => {
+    if (current.demo) throw new Error("The demo keeps its links.");
+    current.clientKey = newKey();
+  });
+  await emailClient(order, {
+    subject: `Your new Scribebunny portal link (${order.ref})`,
+    eyebrow: `Order ${order.ref}`,
+    heading: "Here's your new portal link",
+    bodyHtml:
+      "<p>We've given your project portal a new private link. The old one no longer works, so please use the button below from now on.</p>",
+    preheader: "Your project portal has a new private link.",
+  });
 }
 
 export async function addMessage(ref: string, from: Role, text: string) {
@@ -287,10 +333,9 @@ export async function updateVideo(
     if (!target.deliveryUrl) delete target.deliveryUrl;
   });
   const video = order.videos.find((item) => item.number === number)!;
-  const delivered =
-    (video.status === "Ready for review" || video.status === "Complete") &&
-    (video.status !== wasStatus || video.deliveryUrl !== hadUrl);
-  if (delivered) await notifyVideo(order, video);
+  const statusChanged = video.status !== wasStatus;
+  const newLink = Boolean(video.deliveryUrl) && video.deliveryUrl !== hadUrl;
+  if (statusChanged || newLink) await notifyVideo(order, video, statusChanged);
 }
 
 export async function setOrderStatus(
@@ -310,7 +355,7 @@ export async function setOrderStatus(
       }
     }
   });
-  if (changed && status === "complete") await notifyComplete(order);
+  if (changed) await notifyOrderStatus(order);
 }
 
 async function notifyMessage(order: PortalOrder, message: PortalMessage) {
@@ -323,7 +368,7 @@ async function notifyMessage(order: PortalOrder, message: PortalMessage) {
       ["Email", order.client.email],
       ["Message", message.text],
     ];
-    await sendTeamEmail({
+    await alertTeam((member) => ({
       subject: `💬 ${title}`,
       html: alertEmail({
         title,
@@ -331,12 +376,12 @@ async function notifyMessage(order: PortalOrder, message: PortalMessage) {
         tone: "lead",
         link: {
           label: "Reply in the portal",
-          href: portalLink(order.ref, "team"),
+          href: teamOrderLink(order.ref, member),
         },
       }),
-      text: `${alertText(title, fields)}\n\nReply in the portal: ${portalLink(order.ref, "team")}`,
+      text: `${alertText(title, fields)}\n\nReply in the portal: ${teamOrderLink(order.ref, member)}`,
       replyTo: order.client.email || undefined,
-    });
+    }));
     return;
   }
   await emailClient(order, {
@@ -348,35 +393,81 @@ async function notifyMessage(order: PortalOrder, message: PortalMessage) {
   });
 }
 
-async function notifyVideo(order: PortalOrder, video: PortalVideo) {
+/** What the client is told when a video reaches each step. */
+const VIDEO_UPDATES: Record<
+  VideoStatus,
+  { heading: string; body: string; preheader: string }
+> = {
+  "Waiting for brief": {
+    heading: "We're ready for your brief",
+    body: "is waiting for your brief. Send it to us in your portal and we'll get started.",
+    preheader: "Send us your brief to get started.",
+  },
+  "Script & storyboard": {
+    heading: "We've started on your script",
+    body: "is in script and storyboard: we're writing the words and sketching the scenes.",
+    preheader: "We're writing and sketching your story.",
+  },
+  Animating: {
+    heading: "Your video is being animated",
+    body: "is now being animated and voiced.",
+    preheader: "Your storyboard is coming to life.",
+  },
+  "Ready for review": {
+    heading: "Your video is ready for review!",
+    body: `is ready. Watch it in your portal and send us any changes there. Every video includes ${VIDEO_SPEC.revisions}.`,
+    preheader: "Take a look and tell us what you think.",
+  },
+  Complete: {
+    heading: "Your video is complete!",
+    body: "is finished and ready to use. You'll find it in your portal.",
+    preheader: "It's yours to use.",
+  },
+};
+
+async function notifyVideo(
+  order: PortalOrder,
+  video: PortalVideo,
+  statusChanged: boolean,
+) {
   if (order.demo) return;
-  const ready = video.status === "Ready for review";
+  const step = VIDEO_STATUSES.indexOf(video.status) + 1;
+  const update = VIDEO_UPDATES[video.status];
   await emailClient(order, {
-    subject: ready
-      ? `${video.title} is ready for your review`
-      : `${video.title} is complete`,
-    eyebrow: `Order ${order.ref}`,
-    heading: ready
-      ? "Your video is ready for review!"
-      : "Your video is complete!",
-    bodyHtml: ready
-      ? `<p><strong>${escapeHtml(video.title)}</strong> is ready. Watch it in your portal and send us any changes there. Every video includes ${escapeHtml(VIDEO_SPEC.revisions)}.</p>`
-      : `<p><strong>${escapeHtml(video.title)}</strong> is finished and ready to use. You'll find it in your portal.</p>`,
-    preheader: ready
-      ? "Take a look and tell us what you think."
-      : "It's yours to use.",
+    subject: statusChanged
+      ? `${video.title}: ${video.status}`
+      : `New link for ${video.title}`,
+    eyebrow: `Order ${order.ref} · Step ${step} of ${VIDEO_STATUSES.length}`,
+    heading: statusChanged
+      ? update.heading
+      : "There's a new link for your video",
+    bodyHtml: statusChanged
+      ? `<p><strong>${escapeHtml(video.title)}</strong> ${escapeHtml(update.body)}</p>`
+      : `<p>We've added a new link for <strong>${escapeHtml(video.title)}</strong>. Watch it in your portal.</p>`,
+    preheader: statusChanged ? update.preheader : "Watch it in your portal.",
   });
 }
 
-async function notifyComplete(order: PortalOrder) {
+async function notifyOrderStatus(order: PortalOrder) {
   if (order.demo) return;
+  if (order.status === "complete") {
+    await emailClient(order, {
+      subject: `Your Scribebunny project ${order.ref} is complete`,
+      eyebrow: `Order ${order.ref}`,
+      heading: "That's a wrap!",
+      bodyHtml:
+        "<p>Every video in your order is complete. Thank you for letting us draw your story. Your videos stay in your portal whenever you need them.</p>",
+      preheader: "Every video in your order is complete.",
+    });
+    return;
+  }
   await emailClient(order, {
-    subject: `Your Scribebunny project ${order.ref} is complete`,
+    subject: `We've reopened your Scribebunny project ${order.ref}`,
     eyebrow: `Order ${order.ref}`,
-    heading: "That's a wrap!",
+    heading: "We've reopened your project",
     bodyHtml:
-      "<p>Every video in your order is complete. Thank you for letting us draw your story. Your videos stay in your portal whenever you need them.</p>",
-    preheader: "Every video in your order is complete.",
+      "<p>Your project is open again so we can keep working on it together. Everything is in your portal.</p>",
+    preheader: "Your project is open again.",
   });
 }
 
@@ -392,7 +483,7 @@ async function emailClient(
 ) {
   if (!order.client.email) return;
   const first = escapeHtml(order.client.name.split(" ")[0] || "there");
-  const link = portalLink(order.ref, "client");
+  const link = clientLink(order);
   await sendCustomerEmail({
     to: [order.client.email],
     subject: content.subject,
