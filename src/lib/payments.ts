@@ -1,5 +1,5 @@
 import Stripe from "stripe";
-import { alertTeam, dashboardLink, teamOrderLink } from "@/lib/access";
+import { alertTeam, dashboardLink, newPortalLink } from "@/lib/access";
 import { sendCustomerEmail } from "@/lib/email";
 import {
   alertEmail,
@@ -15,14 +15,7 @@ import {
   VIDEO_SPEC,
   type VideoPackage,
 } from "@/lib/packages";
-import {
-  clientLink,
-  clientPath,
-  markPortalPaid,
-  openPortal,
-  type PortalOrder,
-} from "@/lib/portal";
-import { PARENT_COMPANY } from "@/lib/site";
+import { PARENT_COMPANY, SITE_URL } from "@/lib/site";
 
 /**
  * Payments: Stripe Checkout for the video packages.
@@ -36,7 +29,9 @@ import { PARENT_COMPANY } from "@/lib/site";
  *
  * fulfil() is idempotent: the PaymentIntent carries a `fulfilled` marker, so
  * the team gets one order alert and the customer one confirmation, however
- * often the page reloads. Prices come from lib/packages.ts (inline price_data),
+ * often the page reloads. Client portals live in their own app
+ * (scribebunny-portal): the alert's "Create their portal" button opens its
+ * New client portal form filled in from this order; nothing here opens one. Prices come from lib/packages.ts (inline price_data),
  * so there are no Stripe products to keep in sync.
  */
 
@@ -147,24 +142,6 @@ export function createCheckout(videoPackage: VideoPackage, origin: string) {
   });
 }
 
-/** The Pay button on a custom-price portal. */
-export function createPortalCheckout(order: PortalOrder, origin: string) {
-  if (order.payment?.status !== "awaiting" || !order.amountCents) {
-    throw new Error("This project has nothing to pay.");
-  }
-  const videos = order.videos.length;
-  return checkoutUrl({
-    productName: `Scribebunny ${order.packageName}`,
-    description: `${videos} ${videos === 1 ? "video" : "videos"} · project ${order.ref}`,
-    amountCents: order.amountCents,
-    metadata: { portal: order.ref },
-    successUrl: `${origin}/portal/paid?session_id={CHECKOUT_SESSION_ID}`,
-    cancelUrl: `${origin}${clientPath(order)}`,
-    customerEmail: order.client.email || undefined,
-    askForDetails: false,
-  });
-}
-
 export type Order = {
   reference: string;
   sessionId: string;
@@ -261,10 +238,8 @@ export async function describeOrder(sessionId: string) {
 /** Record a paid order once: the team alert, then the customer's confirmation. */
 export async function fulfil(sessionId: string) {
   let order = await loadOrder(sessionId);
-  if (order.portalRef) {
-    await settlePortalPayment(sessionId, order);
-    return order;
-  }
+  // Custom-price portal payments are settled by the portal app.
+  if (order.portalRef) return order;
   const paymentId = order.paymentId;
   if (!order.paid || !paymentId) return order;
 
@@ -272,13 +247,12 @@ export async function fulfil(sessionId: string) {
   if (intent.metadata?.fulfilled) return order;
 
   // Stripe finalizes the invoice a moment after payment; wait once so the
-  // alert and the portal can link it.
+  // alert can link it.
   if (!order.invoiceNumber) {
     await new Promise((resolve) => setTimeout(resolve, 2000));
     order = await loadOrder(sessionId);
   }
 
-  const portal = await openPortal(order);
   await sendOrderAlert(order);
   await stripe()
     .paymentIntents.update(paymentId, {
@@ -287,7 +261,7 @@ export async function fulfil(sessionId: string) {
     .catch((error) =>
       console.error("[payments] could not mark fulfilled:", error),
     );
-  await sendOrderConfirmation(order, clientLink(portal)).catch((error) =>
+  await sendOrderConfirmation(order).catch((error) =>
     console.error("[payments] customer confirmation failed:", error),
   );
   return order;
@@ -325,16 +299,16 @@ async function sendOrderAlert(order: Order) {
       fields: [...fields, ["All orders", dashboardLink(member)]],
       tone: "paid",
       link: {
-        label: "Open in the portal",
-        href: teamOrderLink(order.reference, member),
+        label: "Create their portal",
+        href: newPortalLink(order.sessionId, member),
       },
     }),
-    text: `${alertText(title, fields)}\n\nPortal: ${teamOrderLink(order.reference, member)}`,
+    text: `${alertText(title, fields)}\n\nCreate their portal: ${newPortalLink(order.sessionId, member)}`,
     replyTo: order.email || undefined,
   }));
 }
 
-async function sendOrderConfirmation(order: Order, portalUrl: string) {
+async function sendOrderConfirmation(order: Order) {
   if (!order.email) return;
   const first = escapeHtml(order.name.split(" ")[0] || "there");
   const delivery =
@@ -353,7 +327,7 @@ async function sendOrderConfirmation(order: Order, portalUrl: string) {
 <p>Thank you for your order! We're a small studio that loves to draw and tell stories, and we can't wait to start on yours.</p>
 ${summary}
 <p><strong>What happens next</strong></p>
-<p>1. Open your project portal and send us your brief: your website, what the video should explain, who it's for, and any brand files.<br>
+<p>1. Within 24 hours we email you a private link to your project portal. Send us your brief there: your website, what the video should explain, who it's for, and any brand files.<br>
 2. We write the script and sketch the storyboard.<br>
 3. We animate, voice, and deliver your video (${escapeHtml(delivery)}), with ${escapeHtml(VIDEO_SPEC.revisions)} to get it just right.</p>
 <p><strong>Every video includes</strong></p>
@@ -367,58 +341,10 @@ ${summary}
       eyebrow: `Payment received · ${order.amount}`,
       heading: "Your story is on our drawing board!",
       bodyHtml: body,
-      preheader:
-        "Your project portal is ready. Send your brief and we'll start sketching.",
-      button: {
-        label: "Open your project portal",
-        href: portalUrl,
-      },
-      afterButton:
-        "Bookmark it: your portal is where we chat, share drafts, and deliver your videos.",
+      preheader: "Your private project portal link arrives within 24 hours.",
+      button: { label: "See videos we've made", href: `${SITE_URL}/work` },
+      afterButton: "Questions before then? Just reply to this email.",
     }),
-    text: `Hi ${order.name.split(" ")[0] || "there"},\n\nThank you for your order (${order.reference}): ${order.packageName}, ${order.amount}.\n\nOpen your project portal to send your brief: ${portalUrl}\n\nWe'll write the script, sketch the storyboard, and deliver your video (${delivery}).\n\nThe Scribebunny studio`,
+    text: `Hi ${order.name.split(" ")[0] || "there"},\n\nThank you for your order (${order.reference}): ${order.packageName}, ${order.amount}.\n\nWithin 24 hours we'll email you a private link to your project portal, where you send your brief.\n\nWe'll write the script, sketch the storyboard, and deliver your video (${delivery}).\n\nThe Scribebunny studio`,
   });
-}
-
-/** A custom-price portal paid through Stripe: mark it paid once, then tell the team. */
-async function settlePortalPayment(sessionId: string, paid: Order) {
-  let order = paid;
-  const ref = order.portalRef;
-  if (!order.paid || !ref) return;
-  if (!order.invoiceNumber) {
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    order = await loadOrder(sessionId);
-  }
-  const portal = await markPortalPaid(ref, {
-    method: "stripe",
-    invoiceUrl: order.invoiceUrl,
-    dashboardUrl: order.dashboardUrl,
-  });
-  if (!portal) return;
-  const title = `Payment received: ${portal.packageName} (${order.amount}) from ${portal.client.name || portal.client.email}`;
-  const fields: [string, string | undefined][] = [
-    ["Project", `${portal.ref} · ${portal.packageName}`],
-    ["Videos", String(portal.videos.length)],
-    ["Amount paid", order.amount],
-    ["Name", portal.client.name],
-    ["Email", portal.client.email],
-    ["Invoice", order.invoiceNumber],
-    ["Invoice link", order.invoiceUrl],
-    ["Stripe payment", order.dashboardUrl],
-    ["Paid at", `${order.paidAt} (Arizona time)`],
-  ];
-  await alertTeam((member) => ({
-    subject: `💰 ${title}`,
-    html: alertEmail({
-      title,
-      fields,
-      tone: "paid",
-      link: {
-        label: "Open in the portal",
-        href: teamOrderLink(portal.ref, member),
-      },
-    }),
-    text: `${alertText(title, fields)}\n\nPortal: ${teamOrderLink(portal.ref, member)}`,
-    replyTo: portal.client.email || undefined,
-  }));
 }

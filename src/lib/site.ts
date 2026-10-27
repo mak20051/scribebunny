@@ -1,4 +1,7 @@
 export const SITE_URL = "https://scribebunny.com";
+/** The client portal: its own app (scribebunny-portal), sharing the data store. */
+export const PORTAL_URL =
+  process.env.PORTAL_URL || "https://portal.scribebunny.com";
 export const CALENDLY_URL = "https://calendly.com/scribebunny-info/30min";
 
 export const PARENT_COMPANY = "Infinisys LLC";

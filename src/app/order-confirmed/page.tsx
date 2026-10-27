@@ -4,7 +4,6 @@ import Link from "next/link";
 import { IconTile } from "@/components/icon-tile";
 import { SiteShell } from "@/components/site-shell";
 import { VIDEO_SPEC } from "@/lib/packages";
-import { clientLink, getPortalOrder } from "@/lib/portal";
 import {
   describeOrder,
   fulfil,
@@ -12,7 +11,7 @@ import {
   webhookConfigured,
   type Order,
 } from "@/lib/payments";
-import { CALENDLY_URL, EMAIL, PARENT_COMPANY } from "@/lib/site";
+import { CALENDLY_URL, PARENT_COMPANY } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Order Confirmed | Scribebunny",
@@ -37,8 +36,8 @@ async function loadOrder(sessionId?: string): Promise<Order | null> {
 const NEXT_STEPS = [
   {
     icon: Mail,
-    title: "Send us your brief",
-    text: "Open your project portal and tell us your website, what the video should explain, who it's for, and any brand files.",
+    title: "Watch for your portal link",
+    text: "Within 24 hours we email you a private link to your project portal. Send your brief there: your website, what the video should explain, who it's for, and any brand files.",
   },
   {
     icon: PenTool,
@@ -56,10 +55,6 @@ export default async function OrderConfirmedPage({ searchParams }: Props) {
   const { session_id: sessionId } = await searchParams;
   const order = await loadOrder(sessionId);
   const paid = order?.paid ?? false;
-  const portal = paid ? await getPortalOrder(order!.reference) : null;
-  const portalHref = portal
-    ? clientLink(portal)
-    : `mailto:${EMAIL}?subject=${encodeURIComponent("Brief for my video")}`;
 
   return (
     <SiteShell>
@@ -127,17 +122,17 @@ export default async function OrderConfirmedPage({ searchParams }: Props) {
         </div>
 
         <div className="mt-14 flex flex-wrap justify-center gap-4">
-          <a href={portalHref} className="btn-primary text-lg">
-            {order?.paid ? "Open Your Project Portal" : "Send Your Brief"}
-          </a>
           <a
             href={CALENDLY_URL}
             target="_blank"
             rel="noreferrer"
-            className="btn-secondary text-lg"
+            className="btn-primary text-lg"
           >
             Book a Kickoff Call
           </a>
+          <Link href="/work" className="btn-secondary text-lg">
+            See Videos We&apos;ve Made
+          </Link>
         </div>
         {order?.invoiceUrl ? (
           <p className="mt-8 text-center text-base text-gray-600">

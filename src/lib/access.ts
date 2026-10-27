@@ -2,11 +2,12 @@ import { randomBytes, timingSafeEqual } from "node:crypto";
 import { cache } from "react";
 import { brandedEmail } from "@/lib/email-layout";
 import { send, type Message } from "@/lib/email";
-import { OWNER_EMAIL, SITE_URL, TEAM_EMAILS } from "@/lib/site";
+import { OWNER_EMAIL, PORTAL_URL, TEAM_EMAILS } from "@/lib/site";
 import { readJson, updateJson, writeJson } from "@/lib/store";
 
 /**
- * Studio access: every team member has their own private key.
+ * Studio access: every team member has their own private key. Shared word for
+ * word by the website (alerts) and the portal app (which checks the keys).
  *
  *   access/team.json   { members: { "<email>": { key, createdAt } } }
  *
@@ -84,11 +85,14 @@ export async function memberForKey(key?: string) {
 }
 
 export const dashboardLink = (member: Member) =>
-  `${SITE_URL}/portal?k=${member.key}`;
+  `${PORTAL_URL}/portal?k=${member.key}`;
 export const teamOrderLink = (ref: string, member: Member) =>
-  `${SITE_URL}/portal/${ref}?k=${member.key}`;
+  `${PORTAL_URL}/portal/${ref}?k=${member.key}`;
 export const conceptReviewLink = (id: string, member: Member) =>
-  `${SITE_URL}/concepts/${id}?k=${member.key}`;
+  `${PORTAL_URL}/concepts/${id}?k=${member.key}`;
+/** New client portal, filled in from a website package order (Stripe session). */
+export const newPortalLink = (sessionId: string, member: Member) =>
+  `${PORTAL_URL}/portal/new?k=${member.key}&order=${encodeURIComponent(sessionId)}`;
 
 /** An alert to each team member separately, built with their own links. */
 export async function alertTeam(

@@ -7,7 +7,17 @@ const privateHeaders = [
   { key: "Referrer-Policy", value: "no-referrer" },
 ];
 
+/** Client portals and concept reviews live in their own app (scribebunny-portal). */
+const PORTAL_URL = process.env.PORTAL_URL || "https://portal.scribebunny.com";
+
 const nextConfig: NextConfig = {
+  async redirects() {
+    return ["/portal", "/portal/:path*", "/concepts/:path*"].map((source) => ({
+      source,
+      destination: `${PORTAL_URL}${source}`,
+      permanent: false,
+    }));
+  },
   async headers() {
     return PRIVATE_PATHS.flatMap((path) => {
       const base = path.replace(/\/$/, "");

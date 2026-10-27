@@ -1,3 +1,12 @@
+import { createHash } from "node:crypto";
+import {
+  mkdir,
+  readdir,
+  readFile as readDisk,
+  rm,
+  writeFile,
+} from "node:fs/promises";
+import { dirname, join } from "node:path";
 import {
   BlobNotFoundError,
   BlobPreconditionFailedError,
@@ -20,11 +29,55 @@ import {
  * same order at once, the second write retries on top of the first instead of
  * overwriting it.
  *
- * Without the token (local runs) documents live in memory for as long as the
- * server process does, which is enough to try the portal.
+ * Without the token (local runs only) documents live in memory, or in files
+ * under LOCAL_STORE_DIR when that is set, so the website and the portal app
+ * can share one local store while testing. Production refuses to run without it.
+ *
+ * This file is shared word for word by the website and the portal app.
  */
 
 export const storeConfigured = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+
+if (!storeConfigured && process.env.VERCEL_ENV === "production") {
+  throw new Error("BLOB_READ_WRITE_TOKEN is not set");
+}
+
+const LOCAL_DIR = process.env.LOCAL_STORE_DIR;
+
+/** Local-only file store: one file per document or upload, under LOCAL_STORE_DIR. */
+const disk = {
+  file: (path: string) => join(LOCAL_DIR!, path),
+  async read(path: string) {
+    try {
+      return await readDisk(disk.file(path));
+    } catch {
+      return null;
+    }
+  },
+  async write(path: string, body: Buffer | string) {
+    await mkdir(dirname(disk.file(path)), { recursive: true });
+    await writeFile(disk.file(path), body);
+  },
+  async list(folder: string): Promise<string[]> {
+    const walk = async (dir: string): Promise<string[]> => {
+      const entries = await readdir(join(LOCAL_DIR!, dir), {
+        withFileTypes: true,
+      }).catch(() => []);
+      const found = await Promise.all(
+        entries.map((entry) =>
+          entry.isDirectory()
+            ? walk(`${dir}${entry.name}/`)
+            : Promise.resolve([`${dir}${entry.name}`]),
+        ),
+      );
+      return found.flat();
+    };
+    return (await walk(folder)).filter((path) => !path.endsWith(".type"));
+  },
+};
+
+const etagOf = (body: Buffer | string) =>
+  createHash("sha1").update(body).digest("hex");
 
 const ROOT = "portal/";
 
@@ -35,6 +88,12 @@ const memory: Map<string, { body: string; version: number }> = ((
 ).__sbStore ??= new Map());
 
 export async function readJson<T>(path: string): Promise<Stored<T> | null> {
+  if (!storeConfigured && LOCAL_DIR) {
+    const body = await disk.read(path);
+    return body
+      ? { value: JSON.parse(body.toString()) as T, etag: etagOf(body) }
+      : null;
+  }
   if (!storeConfigured) {
     const hit = memory.get(path);
     return hit
@@ -65,6 +124,15 @@ export async function writeJson(
   condition: { etag?: string; onlyIfNew?: boolean } = {},
 ): Promise<boolean> {
   const body = JSON.stringify(value);
+  if (!storeConfigured && LOCAL_DIR) {
+    const current = await disk.read(path);
+    if (condition.onlyIfNew && current) return false;
+    if (condition.etag && current && etagOf(current) !== condition.etag) {
+      return false;
+    }
+    await disk.write(path, body);
+    return true;
+  }
   if (!storeConfigured) {
     const hit = memory.get(path);
     if (condition.onlyIfNew && hit) return false;
@@ -111,6 +179,7 @@ export async function updateJson<T>(
 
 /** Paths of every document under a folder, e.g. listPaths("orders/"). */
 export async function listPaths(folder: string): Promise<string[]> {
+  if (!storeConfigured && LOCAL_DIR) return disk.list(folder);
   if (!storeConfigured) {
     return [...memory.keys()].filter((key) => key.startsWith(folder));
   }
@@ -149,6 +218,11 @@ export const portalPath = (pathname: string) =>
   pathname.startsWith(ROOT) ? pathname.slice(ROOT.length) : null;
 
 export async function putFile(path: string, body: Buffer, contentType: string) {
+  if (!storeConfigured && LOCAL_DIR) {
+    await disk.write(path, body);
+    await disk.write(`${path}.type`, contentType);
+    return;
+  }
   if (!storeConfigured) {
     memoryFiles.set(path, { body, contentType });
     return;
@@ -161,6 +235,16 @@ export async function putFile(path: string, body: Buffer, contentType: string) {
 }
 
 export async function fileInfo(path: string) {
+  if (!storeConfigured && LOCAL_DIR) {
+    const body = await disk.read(path);
+    const type = await disk.read(`${path}.type`);
+    return body
+      ? {
+          size: body.length,
+          contentType: type?.toString() ?? "application/octet-stream",
+        }
+      : null;
+  }
   if (!storeConfigured) {
     const hit = memoryFiles.get(path);
     return hit ? { size: hit.body.length, contentType: hit.contentType } : null;
@@ -175,6 +259,17 @@ export async function fileInfo(path: string) {
 }
 
 export async function readFile(path: string) {
+  if (!storeConfigured && LOCAL_DIR) {
+    const info = await fileInfo(path);
+    const body = info ? await disk.read(path) : null;
+    return info && body
+      ? {
+          stream: new Blob([new Uint8Array(body)]).stream(),
+          contentType: info.contentType,
+          size: info.size,
+        }
+      : null;
+  }
   if (!storeConfigured) {
     const hit = memoryFiles.get(path);
     return hit
@@ -196,6 +291,10 @@ export async function readFile(path: string) {
 
 /** Delete every file under a folder, e.g. deleteFiles("files/SB-DEMO/"). */
 export async function deleteFiles(folder: string) {
+  if (!storeConfigured && LOCAL_DIR) {
+    await rm(disk.file(folder), { recursive: true, force: true });
+    return;
+  }
   if (!storeConfigured) {
     for (const key of [...memoryFiles.keys()]) {
       if (key.startsWith(folder)) memoryFiles.delete(key);
