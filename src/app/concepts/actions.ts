@@ -9,6 +9,7 @@ import {
   sendConcepts,
   type Concept,
 } from "@/lib/concepts";
+import { stopByTeam } from "@/lib/prospect-follow-ups";
 
 function field(formData: FormData, name: string, max: number) {
   return String(formData.get(name) ?? "")
@@ -65,5 +66,13 @@ export async function sendConceptsAction(formData: FormData) {
 export async function redraftConceptsAction(formData: FormData) {
   const id = await authorize(formData);
   await draftConcepts(id);
+  revalidatePath(`/concepts/${id}`);
+}
+
+/** The prospect replied or booked a call: no more reminders. */
+export async function stopFollowUpsAction(formData: FormData) {
+  const id = await authorize(formData);
+  const member = await memberForKey(field(formData, "k", 64));
+  await stopByTeam(id, member?.email);
   revalidatePath(`/concepts/${id}`);
 }

@@ -13,9 +13,11 @@ import {
   replaceClientLinkAction,
   resetDemoAction,
   setOrderStatusAction,
+  stopPayRemindersAction,
   updateVideoAction,
 } from "@/app/portal/actions";
 import { AutoRefresh } from "@/components/auto-refresh";
+import { FollowUpStatus } from "@/components/follow-up-status";
 import { LaunchKit } from "@/components/launch-kit";
 import { LocalTime } from "@/components/local-time";
 import { MessageComposer } from "@/components/message-composer";
@@ -30,6 +32,7 @@ import {
   VIDEO_STATUSES,
   type PortalVideo,
 } from "@/lib/portal";
+import { followUpSchedule } from "@/lib/prospect-follow-ups";
 import { EMAIL, PARENT_COMPANY } from "@/lib/site";
 import { storeConfigured } from "@/lib/store";
 import {
@@ -158,6 +161,16 @@ function PaymentCard({
           {isTeam ? "Mark as paid" : `Pay ${order.amount} securely`}
         </SubmitButton>
       </form>
+      {isTeam && order.manual && !order.demo ? (
+        <FollowUpStatus
+          title="Payment reminders"
+          rows={followUpSchedule(order.createdAt, order.payReminders)}
+          stopped={order.payReminders?.stopped}
+          action={stopPayRemindersAction}
+          hidden={<Hidden orderRef={orderRef} k={k} />}
+          className="mt-6"
+        />
+      ) : null}
     </section>
   );
 }

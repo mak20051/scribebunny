@@ -7,7 +7,8 @@ import {
 } from "@/lib/access";
 import { filesFolder, type Attachment } from "@/lib/attachments";
 import type { Review } from "@/lib/launch";
-import { sendCustomerEmail } from "@/lib/email";
+import type { ProspectFollowUps } from "@/lib/prospect-follow-ups";
+import { sendCustomerEmail, unsubscribeHeaders } from "@/lib/email";
 import { randomBytes } from "node:crypto";
 import {
   alertEmail,
@@ -15,6 +16,7 @@ import {
   brandedEmail,
   detailsTable,
   escapeHtml,
+  type StopLink,
 } from "@/lib/email-layout";
 import { findVideoPackage, formatUsd, VIDEO_SPEC } from "@/lib/packages";
 import type { Order } from "@/lib/payments";
@@ -112,6 +114,8 @@ export type PortalOrder = {
     method?: "stripe" | "outside";
     paidAt?: string;
   };
+  /** Custom-price portals only: reminders while payment is awaited (lib/prospect-follow-ups.ts). */
+  payReminders?: ProspectFollowUps;
 };
 
 export type PortalMessage = {
@@ -690,6 +694,8 @@ export async function emailClient(
     bodyHtml: string;
     preheader: string;
     button?: { label: string; href: string };
+    /** Reminders only: the opt-out line, and the mail app's one-click unsubscribe. */
+    stop?: StopLink & { oneClick: string };
   },
 ) {
   if (!order.client.email) return;
@@ -709,7 +715,11 @@ export async function emailClient(
       preheader: content.preheader,
       button,
       afterButton: "Or simply reply to this email.",
+      stopLink: content.stop,
     }),
-    text: `Hi ${order.client.name.split(" ")[0] || "there"},\n\n${content.heading}\n\n${button.label}: ${link}\n\nThe Scribebunny studio`,
+    text: `Hi ${order.client.name.split(" ")[0] || "there"},\n\n${content.heading}\n\n${button.label}: ${link}\n\nThe Scribebunny studio${
+      content.stop ? `\n\n${content.stop.reason} Stop these reminders: ${content.stop.href}` : ""
+    }`,
+    headers: content.stop ? unsubscribeHeaders(content.stop.oneClick) : undefined,
   });
 }

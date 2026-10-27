@@ -17,6 +17,7 @@ export type Message = {
   html: string;
   text?: string;
   replyTo?: string;
+  headers?: Record<string, string>;
 };
 
 const transporter = process.env.SMTP_HOST
@@ -59,6 +60,12 @@ export async function send(message: Message) {
 export function sendTeamEmail(message: Omit<Message, "to">) {
   return send({ ...message, to: TEAM_EMAILS });
 }
+
+/** One-click unsubscribe (RFC 8058): mail apps show their own button and POST to `url`. */
+export const unsubscribeHeaders = (url: string) => ({
+  "List-Unsubscribe": `<${url}>`,
+  "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+});
 
 /** To a customer; replies come back to the studio inbox. */
 export function sendCustomerEmail(message: Omit<Message, "replyTo">) {

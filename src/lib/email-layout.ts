@@ -80,11 +80,18 @@ export function detailsTable(rows: [string, string | undefined][]) {
     .join("")}</table>`;
 }
 
-const footer = `<tr><td style="padding:22px 32px 0;text-align:center;font-family:${BRAND.font};font-size:12px;line-height:1.7;color:${BRAND.muted}">
+/** A reminder's opt-out line: why they get it, and the link that stops it. */
+export type StopLink = { reason: string; href: string };
+
+const footer = (stop?: StopLink) => `<tr><td style="padding:22px 32px 0;text-align:center;font-family:${BRAND.font};font-size:12px;line-height:1.7;color:${BRAND.muted}">
   <a href="${SITE_URL}/work" style="color:${BRAND.muted};text-decoration:underline">Our work</a> &nbsp;·&nbsp;
   <a href="${SITE_URL}/#pricing" style="color:${BRAND.muted};text-decoration:underline">Pricing</a> &nbsp;·&nbsp;
   <a href="${SITE_URL}/contact" style="color:${BRAND.muted};text-decoration:underline">Contact</a><br>
-  Scribebunny is a brand of ${escapeHtml(PARENT_COMPANY)} · ${escapeHtml(`${ADDRESS.street}, ${ADDRESS.city}, ${ADDRESS.region} ${ADDRESS.postalCode}`)} · ${escapeHtml(PHONE_DISPLAY)}
+  Scribebunny is a brand of ${escapeHtml(PARENT_COMPANY)} · ${escapeHtml(`${ADDRESS.street}, ${ADDRESS.city}, ${ADDRESS.region} ${ADDRESS.postalCode}`)} · ${escapeHtml(PHONE_DISPLAY)}${
+    stop
+      ? `<br>${escapeHtml(stop.reason)} <a href="${escapeHtml(stop.href)}" style="color:${BRAND.muted};text-decoration:underline">Stop these reminders</a>`
+      : ""
+  }
 </td></tr>`;
 
 /**
@@ -98,6 +105,7 @@ export function brandedEmail(opts: {
   eyebrow?: string;
   button?: { label: string; href: string };
   afterButton?: string;
+  stopLink?: StopLink;
 }) {
   const body = opts.bodyHtml.replace(
     /<p>/g,
@@ -126,7 +134,7 @@ ${
     ${escapeHtml(TAGLINE)} Questions? Just reply to this email.
   </td></tr></table>
 </td></tr>
-${footer}`,
+${footer(opts.stopLink)}`,
     opts.preheader,
   );
 }
@@ -179,7 +187,7 @@ export function alertEmail(opts: {
   ${detailsTable(opts.fields)}
   ${actions.length ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:4px 0 22px"><tr>${actions.map((a) => `<td style="padding-right:16px" valign="middle">${a}</td>`).join("")}</tr></table>` : ""}
 </td></tr>
-${footer}`,
+${footer()}`,
     `${tone.label}: ${opts.title}`,
   );
 }

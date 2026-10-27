@@ -4,8 +4,10 @@ import {
   redraftConceptsAction,
   saveConceptsAction,
   sendConceptsAction,
+  stopFollowUpsAction,
 } from "@/app/concepts/actions";
 import { AutoRefresh } from "@/components/auto-refresh";
+import { FollowUpStatus } from "@/components/follow-up-status";
 import { memberForKey } from "@/lib/access";
 import { LocalTime } from "@/components/local-time";
 import { PortalShell } from "@/components/portal-shell";
@@ -16,6 +18,7 @@ import {
   type Concept,
   type ConceptStatus,
 } from "@/lib/concepts";
+import { followUpSchedule, orderFor } from "@/lib/prospect-follow-ups";
 
 export const metadata: Metadata = {
   title: "Concept Review | Scribebunny Studio",
@@ -74,6 +77,8 @@ export default async function ConceptReviewPage({
   }
 
   const status = STATUS[request.status];
+  const sentAt = request.status === "sent" ? request.sentAt : undefined;
+  const ordered = sentAt ? await orderFor(request.lead.email) : null;
   const concepts = [0, 1, 2].map((index) => request.concepts[index] ?? EMPTY);
 
   return (
@@ -172,6 +177,18 @@ export default async function ConceptReviewPage({
           </p>
         ) : null}
       </section>
+
+      {sentAt ? (
+        <FollowUpStatus
+          title="Follow-up emails"
+          rows={followUpSchedule(sentAt, request.followUps)}
+          stopped={request.followUps?.stopped}
+          ordered={ordered}
+          action={stopFollowUpsAction}
+          hidden={<Hidden id={request.id} k={k} />}
+          className="mt-8"
+        />
+      ) : null}
 
       <form
         // Remount when a new draft arrives so the fields show it.

@@ -7,6 +7,7 @@ export const PRIVATE_PATHS = [
   "/portal",
   "/concepts",
   "/order-confirmed",
+  "/stop-reminders",
   "/api/",
 ];
 

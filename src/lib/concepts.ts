@@ -11,6 +11,7 @@ import { formatUsd, VIDEO_SPEC, videoPackages } from "@/lib/packages";
 import { researchWebsite, type WebsiteResearch } from "@/lib/research";
 import { CALENDLY_URL, SITE_URL } from "@/lib/site";
 import { listPaths, readJson, updateJson, writeJson } from "@/lib/store";
+import type { ProspectFollowUps } from "@/lib/prospect-follow-ups";
 
 /**
  * Free 3-concept offer: a prospect asks, we research their website, DeepSeek
@@ -55,6 +56,8 @@ export type ConceptRequest = {
   concepts: Concept[];
   note?: string;
   sentAt?: string;
+  /** Reminders after the concepts went out (lib/prospect-follow-ups.ts). */
+  followUps?: ProspectFollowUps;
 };
 
 const DEEPSEEK_URL = "https://api.deepseek.com/chat/completions";
@@ -66,6 +69,12 @@ export async function getConceptRequest(id: string) {
   if (!/^C-[A-Z0-9]{8}$/.test(id)) return null;
   return (await readJson<ConceptRequest>(requestPath(id)))?.value ?? null;
 }
+
+/** Change a request and save it, retrying if someone else saved first. */
+export const updateConceptRequest = (
+  id: string,
+  change: (request: ConceptRequest) => void,
+) => updateJson<ConceptRequest>(requestPath(id), change);
 
 /** Every concept request, newest first. */
 export async function listConceptRequests() {
@@ -392,4 +401,4 @@ function leadFields(request: ConceptRequest): [string, string | undefined][] {
   ];
 }
 
-const firstName = (name: string) => name.trim().split(" ")[0] || "there";
+export const firstName = (name: string) => name.trim().split(" ")[0] || "there";

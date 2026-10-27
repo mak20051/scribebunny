@@ -9,6 +9,7 @@ import {
 } from "@/lib/attachments";
 import { fileInfo, portalPath } from "@/lib/store";
 import { saveReview, toggleLaunchStep } from "@/lib/launch";
+import { stopByTeam } from "@/lib/prospect-follow-ups";
 import { createPortalCheckout } from "@/lib/payments";
 import { SITE_URL } from "@/lib/site";
 import { redirect } from "next/navigation";
@@ -211,6 +212,14 @@ export async function payPortalAction(formData: FormData) {
 export async function markPaidAction(formData: FormData) {
   const { ref } = await authorize(formData, true);
   await markPortalPaid(ref, { method: "outside" });
+  revalidatePath(`/portal/${ref}`);
+}
+
+/** Studio: the client replied or said no, so no more payment reminders. */
+export async function stopPayRemindersAction(formData: FormData) {
+  const { ref } = await authorize(formData, true);
+  const member = await memberForKey(field(formData, "k", 64));
+  await stopByTeam(ref, member?.email);
   revalidatePath(`/portal/${ref}`);
 }
 

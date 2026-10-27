@@ -76,6 +76,15 @@ cron (`vercel.json`, `/api/cron/follow-ups`, 16:00 UTC) sends the day 7 email
 next), each once per order and never for the demo. Set `CRON_SECRET` in Vercel
 so only the scheduler can call it (it is safe to call either way).
 
+The same cron sends prospect follow-ups (`src/lib/prospect-follow-ups.ts`): day 2
+and day 5 after free concepts were sent, and day 2 and day 5 after a
+custom-price portal was created but not paid (a quote). Each goes once, only
+within 3 days of its due day (old requests never get a late one), and they stop
+when the prospect orders or pays, clicks "Stop these reminders"
+(`/stop-reminders`, or one-click unsubscribe via `/api/follow-ups/stop`, POST
+only), or the team clicks "Stop follow-ups" on the concept review page or the
+portal's payment card (the site can't see replies or Calendly bookings).
+
 Messages can carry screenshots and files (`src/lib/attachments.ts`): attach,
 paste or drop, up to 10 per message and 50 MB each. Browsers upload straight to
 the Blob store at `portal/files/<ref>/` (`/api/portal/upload` only checks the
