@@ -111,8 +111,10 @@ the prospect an acknowledgement; in the background the site reads their website
 (public hosts only) and DeepSeek (`deepseek-flash`, `DEEPSEEK_API_KEY`, optional
 `DEEPSEEK_MODEL`) drafts 3 concepts. The studio reviews and edits them at the
 signed `/concepts/<id>` link, then sends the branded concepts email. Concepts are
-never sent without a person clicking Send. Without the API key the team writes
-them by hand on the same page.
+never sent without a person clicking Send. Without the API key, drafting is
+paused (`autoDraftOn()` in `src/lib/concepts.ts`): requests start as "Needs
+writing", no draft alert goes out, and the team writes them by hand on the same
+page. The prospect's acknowledgement is a plain receipt either way.
 
 ## Growth board
 `/portal/growth` is the owner's only: it opens with the owner's own key (the

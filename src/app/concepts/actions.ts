@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { memberForKey } from "@/lib/access";
 import {
+  autoDraftOn,
   CONCEPT_STYLES,
   draftConcepts,
   saveConcepts,
@@ -65,6 +66,7 @@ export async function sendConceptsAction(formData: FormData) {
 
 export async function redraftConceptsAction(formData: FormData) {
   const id = await authorize(formData);
+  if (!autoDraftOn()) throw new Error("Automatic drafting is paused.");
   await draftConcepts(id);
   revalidatePath(`/concepts/${id}`);
 }

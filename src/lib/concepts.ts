@@ -65,6 +65,13 @@ const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL || "deepseek-flash";
 
 const requestPath = (id: string) => `concepts/${id}.json`;
 
+/**
+ * Automatic drafting (website research + DeepSeek) is paused until
+ * DEEPSEEK_API_KEY is set: new requests start as "Needs writing", nothing is
+ * drafted, and the team gets only the request alert.
+ */
+export const autoDraftOn = () => Boolean(process.env.DEEPSEEK_API_KEY);
+
 export async function getConceptRequest(id: string) {
   if (!/^C-[A-Z0-9]{8}$/.test(id)) return null;
   return (await readJson<ConceptRequest>(requestPath(id)))?.value ?? null;
@@ -92,12 +99,12 @@ function newId() {
   return `C-${[...randomBytes(8)].map((byte) => alphabet[byte % alphabet.length]).join("")}`;
 }
 
-/** Record a new request, tell the team, and reassure the prospect. */
+/** Record a new request, tell the team, and confirm receipt to the prospect. */
 export async function requestConcepts(lead: ConceptRequest["lead"]) {
   const request: ConceptRequest = {
     id: newId(),
     createdAt: new Date().toISOString(),
-    status: "drafting",
+    status: autoDraftOn() ? "drafting" : "failed",
     lead,
     concepts: [],
   };
@@ -121,22 +128,17 @@ export async function requestConcepts(lead: ConceptRequest["lead"]) {
   }));
   await sendCustomerEmail({
     to: [lead.email],
-    subject: "Your 3 free video concepts are on our drawing board",
+    subject: "We've received your request",
     html: brandedEmail({
       eyebrow: "Free concepts",
-      heading: "We're researching your business now",
+      heading: "We've received your request",
       bodyHtml: `<p>Hi ${escapeHtml(firstName(lead.name))},</p>
-<p>Thanks for asking for your 3 free video concepts. We're a small studio that loves to draw and tell stories, and yours starts with homework: ${
-        lead.website
-          ? `we're reading <strong>${escapeHtml(lead.website)}</strong>`
-          : "we're reading"
-      } and the details you shared to understand what you offer and who you're talking to.</p>
-<p>Then we shape three different story directions for a short animated video, and our storytellers review every one before it reaches you. You'll have them within 24 hours.</p>`,
-      preheader: "Three researched video concepts, within 24 hours.",
+<p>Thanks for asking Scribebunny for free video concepts. We've received your request, and our team will be in touch soon.</p>`,
+      preheader: "Thanks! We've received your request.",
       button: { label: "See videos we've made", href: `${SITE_URL}/work` },
       afterButton: "Questions in the meantime? Just reply to this email.",
     }),
-    text: `Hi ${firstName(lead.name)},\n\nThanks for asking for your 3 free video concepts. We're researching your website and details now, and our storytellers review every concept before it reaches you. You'll have them within 24 hours.\n\nThe Scribebunny studio`,
+    text: `Hi ${firstName(lead.name)},\n\nThanks for asking Scribebunny for free video concepts. We've received your request, and our team will be in touch soon.\n\nThe Scribebunny studio`,
   });
   return request;
 }

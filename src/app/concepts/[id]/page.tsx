@@ -13,6 +13,7 @@ import { LocalTime } from "@/components/local-time";
 import { PortalShell } from "@/components/portal-shell";
 import { SubmitButton } from "@/components/submit-button";
 import {
+  autoDraftOn,
   CONCEPT_STYLES,
   getConceptRequest,
   type Concept,
@@ -280,24 +281,31 @@ export default async function ConceptReviewPage({
         </div>
       </form>
 
-      <form
-        action={redraftConceptsAction}
-        className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t-2 border-dashed border-gray-200 pt-6"
-      >
-        <Hidden id={request.id} k={k} />
-        <p className="text-base text-gray-600">
-          Want fresh ideas? Drafting again replaces the concepts above.
-        </p>
-        <SubmitButton
-          pendingLabel="Drafting… (up to a minute)"
-          className="btn-secondary w-full sm:w-auto"
+      {autoDraftOn() ? (
+        <form
+          action={redraftConceptsAction}
+          className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t-2 border-dashed border-gray-200 pt-6"
         >
-          <span className="inline-flex items-center gap-2">
-            <RefreshCw className="h-5 w-5" aria-hidden="true" />
-            Draft again
-          </span>
-        </SubmitButton>
-      </form>
+          <Hidden id={request.id} k={k} />
+          <p className="text-base text-gray-600">
+            Want fresh ideas? Drafting again replaces the concepts above.
+          </p>
+          <SubmitButton
+            pendingLabel="Drafting… (up to a minute)"
+            className="btn-secondary w-full sm:w-auto"
+          >
+            <span className="inline-flex items-center gap-2">
+              <RefreshCw className="h-5 w-5" aria-hidden="true" />
+              Draft again
+            </span>
+          </SubmitButton>
+        </form>
+      ) : (
+        <p className="mt-8 border-t-2 border-dashed border-gray-200 pt-6 text-base text-gray-600">
+          Automatic drafting is paused until the DeepSeek key is added, so write
+          the concepts above by hand.
+        </p>
+      )}
     </PortalShell>
   );
 }

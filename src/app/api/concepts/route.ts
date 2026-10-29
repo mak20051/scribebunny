@@ -1,8 +1,8 @@
 import { after, NextResponse } from "next/server";
-import { draftConcepts, requestConcepts } from "@/lib/concepts";
+import { autoDraftOn, draftConcepts, requestConcepts } from "@/lib/concepts";
 import { forwardToCrm } from "@/lib/crm";
 
-// Drafting runs after the response (website research + DeepSeek).
+// Drafting runs after the response (website research + DeepSeek), when on.
 export const maxDuration = 120;
 
 const field = (value: unknown, max: number) =>
@@ -48,9 +48,11 @@ export async function POST(request: Request) {
     const created = await requestConcepts(lead);
     after(async () => {
       await Promise.all([
-        draftConcepts(created.id).catch((error) =>
-          console.error("[concepts] draft failed:", error),
-        ),
+        autoDraftOn()
+          ? draftConcepts(created.id).catch((error) =>
+              console.error("[concepts] draft failed:", error),
+            )
+          : null,
         forwardToCrm({
           ...lead,
           message: `Free 3 concepts request. ${lead.details ?? ""}`.trim(),
