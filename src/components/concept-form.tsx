@@ -1,7 +1,8 @@
 "use client";
 
 import { PartyPopper } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { gtag } from "@/components/google-analytics";
 
 type ConceptLead = {
   name: string;
@@ -24,6 +25,11 @@ export function ConceptForm() {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
+
+  // generate_lead for GA4 (no personal data). Posts nothing extra.
+  useEffect(() => {
+    if (sent) gtag("event", "generate_lead", { form: "free_concepts" });
+  }, [sent]);
 
   const update = (field: keyof ConceptLead, value: string) =>
     setForm((current) => ({ ...current, [field]: value }));

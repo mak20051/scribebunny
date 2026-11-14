@@ -60,7 +60,7 @@ export function AgencyInquiryForm({
     setSending(false);
     if (response.ok) {
       setSent(true);
-      router.push("/thank-you");
+      router.push("/thank-you?form=agency");
     }
   };
 
