@@ -2,10 +2,12 @@
 
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
+import { isPrivatePath } from "@/lib/private-paths";
 
 export function LiveChat() {
-  // The client portal has its own messages, so the chat widget stays out of it.
-  const hidden = usePathname().startsWith("/portal");
+  // Not on private pages: the portal has its own messages, and the other
+  // private addresses carry keys that a third-party widget should not see.
+  const hidden = isPrivatePath(usePathname());
 
   useEffect(() => {
     if (hidden || document.getElementById("tcx-callus-js")) return;

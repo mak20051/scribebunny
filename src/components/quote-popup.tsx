@@ -3,6 +3,7 @@
 import { PartyPopper, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { gtag } from "@/components/google-analytics";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -88,7 +89,10 @@ function QuotePopup({ onClose }: { onClose: () => void }) {
       }),
     });
     setSending(false);
-    if (response.ok) setSent(true);
+    if (response.ok) {
+      gtag("event", "generate_lead", { form: "quote" });
+      setSent(true);
+    }
   };
 
   return (

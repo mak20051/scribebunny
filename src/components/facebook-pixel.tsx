@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { isPrivatePath } from "@/lib/private-paths";
 
 const PIXEL_ID = "133832099812863";
@@ -11,7 +11,20 @@ export function FacebookPixel() {
   const pathname = usePathname();
   const skip = isPrivatePath(pathname);
 
+  // The Pixel's own history tracking fires on pushState, before React can
+  // react, so it would send a private address. It is switched off
+  // (disablePushState) and client-side page views are sent here, public pages
+  // only. Consent is also revoked while on a private page.
+  const first = useRef(true);
   useEffect(() => {
+    const fbq = (window as { fbq?: (...args: unknown[]) => void }).fbq;
+    if (!fbq) return;
+    fbq("consent", skip ? "revoke" : "grant");
+    if (!skip && !first.current) fbq("track", "PageView");
+  }, [skip, pathname]);
+
+  useEffect(() => {
+    first.current = false;
     if (skip || (window as { fbq?: unknown }).fbq) return;
     const script = document.createElement("script");
     script.nonce = PIXEL_ID;
@@ -24,6 +37,7 @@ export function FacebookPixel() {
         t.src=v;s=b.getElementsByTagName(e)[0];
         s.parentNode.insertBefore(t,s)}(window, document,'script',
         'https://connect.facebook.net/en_US/fbevents.js');
+        fbq.disablePushState = true;
         fbq('init', '${PIXEL_ID}');
         fbq('track', 'PageView');
       `;

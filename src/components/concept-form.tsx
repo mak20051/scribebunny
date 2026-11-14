@@ -1,7 +1,7 @@
 "use client";
 
 import { PartyPopper } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { gtag } from "@/components/google-analytics";
 
 type ConceptLead = {
@@ -26,11 +26,6 @@ export function ConceptForm() {
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
 
-  // generate_lead for GA4 (no personal data). Posts nothing extra.
-  useEffect(() => {
-    if (sent) gtag("event", "generate_lead", { form: "free_concepts" });
-  }, [sent]);
-
   const update = (field: keyof ConceptLead, value: string) =>
     setForm((current) => ({ ...current, [field]: value }));
 
@@ -52,6 +47,10 @@ export function ConceptForm() {
         error?: string;
       };
       if (response.ok) {
+        // The honeypot makes the API reply ok without saving: not a lead.
+        if (!form.company.trim()) {
+          gtag("event", "generate_lead", { form: "free_concepts" });
+        }
         setSent(true);
       } else {
         setError(data.error ?? "Something went wrong. Please try again.");

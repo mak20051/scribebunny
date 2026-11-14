@@ -4,10 +4,15 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { isPrivatePath } from "@/lib/private-paths";
 import { CALENDLY_URL } from "@/lib/site";
-import { findVideoPackage } from "@/lib/packages";
+import { videoPackages } from "@/lib/packages";
 
 const GA_ID = "G-MX1GLDERW4";
-const LEAD_FORMS = ["contact", "agency", "free_concepts"];
+const LEAD_FORMS = ["contact", "agency", "free_concepts", "quote"];
+// Campaign tags GA4 needs for attribution; every other param is dropped.
+const KEEP_PARAMS = [
+  "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
+  "utm_id", "gclid", "gbraid", "wbraid", "msclkid",
+];
 
 type GtagWindow = Window & {
   dataLayer?: unknown[];
@@ -33,42 +38,48 @@ export function gtag(...args: unknown[]) {
 const onPrivatePage = () => isPrivatePath(window.location.pathname);
 
 /**
- * Only /thank-you keeps a query param, and only a known form name: no other
- * query string (?k=, session_id=, UTMs, ...) is ever sent to GA.
+ * page_view location: path + campaign tags (utm_*, click IDs) only, plus the
+ * form name on /thank-you. Any other param (?k=, session_id=, ...) is dropped.
+ * This covers the page_views this code sends, not gtag's own automatic events.
  */
 function pageLocation(pathname: string) {
-  let location = window.location.origin + pathname;
-  if (pathname === "/thank-you") {
-    const form = new URLSearchParams(window.location.search).get("form");
-    if (form && LEAD_FORMS.includes(form)) location += `?form=${form}`;
+  const current = new URLSearchParams(window.location.search);
+  const kept = new URLSearchParams();
+  for (const key of KEEP_PARAMS) {
+    const value = current.get(key);
+    if (value) kept.set(key, value);
   }
-  return location;
+  if (pathname === "/thank-you") {
+    const form = current.get("form");
+    if (form && LEAD_FORMS.includes(form)) kept.set("form", form);
+  }
+  const query = kept.toString();
+  return window.location.origin + pathname + (query ? `?${query}` : "");
 }
 
-/** Package name for a checkout button, read from the DOM (no component edits). */
+/** The package behind a checkout button, read from the DOM (no component edits). */
 function checkoutPackage(button: HTMLElement) {
   const card = button.closest("article.pricing-card");
   const cardName = card?.querySelector("h3")?.textContent?.trim();
-  if (cardName) return cardName;
+  if (cardName) return videoPackages.find((item) => item.name === cardName);
   if (/^order a video/i.test(button.textContent?.trim() ?? "")) {
-    return findVideoPackage("single")?.name;
+    return videoPackages.find((item) => item.id === "single");
   }
   return undefined;
 }
 
 function onDocumentClick(event: MouseEvent) {
   if (onPrivatePage() || !(event.target instanceof Element)) return;
-  const page_path = window.location.pathname;
 
   const link = event.target.closest("a[href]");
   if (link) {
     const href = link.getAttribute("href") ?? "";
     if (href.startsWith(CALENDLY_URL)) {
-      gtag("event", "book_call_click", { page_path });
+      gtag("event", "book_call_click");
     } else if (/^tel:/i.test(href)) {
-      gtag("event", "phone_click", { page_path });
+      gtag("event", "phone_click");
     } else if (/^mailto:/i.test(href)) {
-      gtag("event", "email_click", { page_path });
+      gtag("event", "email_click");
     }
     return;
   }
@@ -81,9 +92,11 @@ function onDocumentClick(event: MouseEvent) {
   const label = button.textContent?.trim() ?? "";
   const inPricingCard = !!button.closest("article.pricing-card");
   if (inPricingCard || /^order a video/i.test(label)) {
+    const item = checkoutPackage(button);
     gtag("event", "begin_checkout", {
-      package_name: checkoutPackage(button),
-      page_path,
+      package_name: item?.name,
+      currency: "USD",
+      value: item ? item.priceCents / 100 : undefined,
     });
   }
 }
@@ -112,24 +125,14 @@ export function GoogleAnalytics() {
     if (privatePage) return;
     gtag("event", "page_view", {
       page_location: pageLocation(pathname),
-      page_path: pathname,
       page_title: document.title,
     });
   }, [pathname, privatePage]);
 
-  // generate_lead for the two forms that redirect to /thank-you.
   useEffect(() => {
-    if (pathname !== "/thank-you") return;
-    const form = new URLSearchParams(window.location.search).get("form");
-    if (!form || !LEAD_FORMS.includes(form)) return;
-    gtag("event", "generate_lead", { form });
-    // Drop the param so a reload does not count the lead twice.
-    window.history.replaceState(null, "", "/thank-you");
-  }, [pathname]);
-
-  useEffect(() => {
-    document.addEventListener("click", onDocumentClick);
-    return () => document.removeEventListener("click", onDocumentClick);
+    // Capture phase: runs before React re-renders the clicked button's label.
+    document.addEventListener("click", onDocumentClick, true);
+    return () => document.removeEventListener("click", onDocumentClick, true);
   }, []);
 
   return null;
