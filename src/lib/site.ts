@@ -30,10 +30,13 @@ export const ADDRESS = {
  * profile here only once it exists and shows the same name, address and phone.
  * LinkedIn is still to come (roadmap #10).
  */
-export const PROFILE_URLS = [
-  "https://clutch.co/profile/scribebunny",
-  "https://www.trustpilot.com/review/scribebunny.com",
-  "https://www.designrush.com/agency/profile/scribe-bunny",
-  "https://www.instagram.com/scribebunny/",
-  "https://www.youtube.com/@scribebunny1848",
-];
+/*
+ * To add to PROFILE_URLS once each listing shows the Tempe NAP (1969 E Stephens
+ * Dr, Tempe, AZ 85283, +1 929-732-7807) instead of New York / 917-310-3784:
+ *   - Clutch:     https://clutch.co/profile/scribebunny
+ *   - Trustpilot: https://www.trustpilot.com/review/scribebunny.com
+ *   - DesignRush: https://www.designrush.com/agency/profile/scribe-bunny
+ *   - Instagram:  https://www.instagram.com/scribebunny/
+ * LinkedIn too, once the company page exists (roadmap #10).
+ */
+export const PROFILE_URLS = ["https://www.youtube.com/@scribebunny1848"];
