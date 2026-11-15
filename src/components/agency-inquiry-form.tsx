@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { gtag } from "@/components/google-analytics";
 
 type LeadForm = {
   name: string;
@@ -59,8 +60,9 @@ export function AgencyInquiryForm({
     });
     setSending(false);
     if (response.ok) {
+      gtag("event", "generate_lead", { form: "agency" });
       setSent(true);
-      router.push("/thank-you");
+      router.push("/thank-you?form=agency");
     }
   };
 

@@ -2,6 +2,7 @@
 
 import { PartyPopper } from "lucide-react";
 import { useState } from "react";
+import { gtag } from "@/components/google-analytics";
 
 type ConceptLead = {
   name: string;
@@ -46,6 +47,10 @@ export function ConceptForm() {
         error?: string;
       };
       if (response.ok) {
+        // The honeypot makes the API reply ok without saving: not a lead.
+        if (!form.company.trim()) {
+          gtag("event", "generate_lead", { form: "free_concepts" });
+        }
         setSent(true);
       } else {
         setError(data.error ?? "Something went wrong. Please try again.");
