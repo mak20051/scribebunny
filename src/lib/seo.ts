@@ -4,8 +4,10 @@ import { videoPackages } from "@/lib/packages";
 import {
   ADDRESS,
   EMAIL,
+  FOUNDING_YEAR,
   PARENT_COMPANY,
   PHONE_DISPLAY,
+  PROFILE_URLS,
   SITE_URL,
 } from "@/lib/site";
 
@@ -96,6 +98,9 @@ export function organizationSchema() {
       availableLanguage: "English",
     },
     parentOrganization: { "@type": "Organization", name: PARENT_COMPANY },
+    foundingDate: String(FOUNDING_YEAR),
+    areaServed: { "@type": "Country", name: "US" },
+    sameAs: PROFILE_URLS,
   };
 }
 
@@ -116,14 +121,16 @@ export function videoPackagesSchema() {
     name: "Explainer and product demo video production",
     serviceType: "Video production",
     provider: { "@id": ORGANIZATION_ID },
-    url: `${SITE_URL}/#pricing`,
+    url: SITE_URL,
+    areaServed: { "@type": "Country", name: "US" },
     offers: videoPackages.map((videoPackage) => ({
       "@type": "Offer",
       name: `${videoPackage.name} package`,
       description: videoPackage.turnaround,
       price: (videoPackage.priceCents / 100).toFixed(2),
       priceCurrency: "USD",
-      url: `${SITE_URL}/#pricing`,
+      availability: "https://schema.org/InStock",
+      url: SITE_URL,
     })),
   };
 }

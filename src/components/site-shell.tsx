@@ -156,12 +156,12 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
                   </a>
                 </li>
                 <li>
-                  <a
+                  <Link
                     href="/contact#contact-form"
                     className="hover:text-[#FF3333]"
                   >
                     Request a Quote
-                  </a>
+                  </Link>
                 </li>
                 <li>
                   <Link

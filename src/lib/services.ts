@@ -1,25 +1,9 @@
-import { Handshake, MonitorPlay, MousePointerClick } from "lucide-react";
+import { verticals } from "@/lib/verticals";
 
-export const services = [
-  {
-    icon: MonitorPlay,
-    title: "SaaS Explainer Videos",
-    description:
-      "Clear, conversion-focused explainer videos for homepages, launches, product overviews, and sales conversations.",
-    href: "/saas-explainer-videos",
-  },
-  {
-    icon: MousePointerClick,
-    title: "Product Demo and Onboarding Videos",
-    description:
-      "Walkthroughs, feature explainers, onboarding assets, and user education videos that help customers understand your product faster.",
-    href: "/product-demo-onboarding-videos",
-  },
-  {
-    icon: Handshake,
-    title: "White-Label Video Production",
-    description:
-      "Reliable behind-the-scenes video fulfillment for agencies that want quality delivery without building in-house production capacity.",
-    href: "/white-label-video-production",
-  },
-];
+/** The service cards on the home page and the llms.txt service list, built from the vertical data. */
+export const services = verticals.map((vertical) => ({
+  icon: vertical.topDoodle,
+  title: vertical.name,
+  description: vertical.summary,
+  href: `/${vertical.slug}`,
+}));
