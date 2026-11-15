@@ -1,4 +1,5 @@
 import { Check, Lock } from "lucide-react";
+import Link from "next/link";
 import { CheckoutButton } from "@/components/checkout-button";
 import {
   BULK_PACKAGE,
@@ -93,12 +94,12 @@ export function PricingSection() {
             </p>
             <p className="mt-1 text-base text-gray-600">Quoted by our team</p>
             <FeatureList items={BULK_PACKAGE.features} />
-            <a
+            <Link
               href="/contact#contact-form"
               className="btn-secondary w-full text-center"
             >
               Contact Team
-            </a>
+            </Link>
           </article>
         </div>
 
