@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { getLeadSource } from "@/components/lead-source-tracker";
 import type { VideoPackageId } from "@/lib/packages";
 
 export function CheckoutButton({
@@ -22,7 +23,7 @@ export function CheckoutButton({
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ packageId }),
+        body: JSON.stringify({ packageId, attribution: getLeadSource() }),
       });
       const data = (await response.json()) as { url?: string };
       if (response.ok && data.url) {

@@ -8,6 +8,7 @@ import {
 } from "@/app/concepts/actions";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { FollowUpStatus } from "@/components/follow-up-status";
+import { LeadSourceDetails } from "@/components/lead-source-details";
 import { memberForKey } from "@/lib/access";
 import { LocalTime } from "@/components/local-time";
 import { PortalShell } from "@/components/portal-shell";
@@ -139,6 +140,7 @@ export default async function ConceptReviewPage({
             </div>
           ) : null}
         </dl>
+        <LeadSourceDetails source={request.source} className="mt-4" />
         {request.lead.details ? (
           <p className="mt-4 rounded-xl bg-[#FFF9E0] p-4 whitespace-pre-wrap text-gray-800">
             {request.lead.details}

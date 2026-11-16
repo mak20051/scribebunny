@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Bricolage_Grotesque, Caveat, Outfit } from "next/font/google";
 import { FacebookPixel } from "@/components/facebook-pixel";
 import { GoogleAnalytics } from "@/components/google-analytics";
+import { LeadSourceTracker } from "@/components/lead-source-tracker";
 import { LiveChat } from "@/components/live-chat";
 import { pageMetadata } from "@/lib/seo";
 import { SITE_URL } from "@/lib/site";
@@ -50,6 +51,7 @@ export default function RootLayout({
         className={`${outfit.variable} ${bricolage.variable} ${caveat.variable} bg-white font-sans antialiased`}
       >
         <GoogleAnalytics />
+        <LeadSourceTracker />
         <FacebookPixel />
         <LiveChat />
         {children}

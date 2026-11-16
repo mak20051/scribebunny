@@ -4,6 +4,7 @@ import { PartyPopper, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { gtag } from "@/components/google-analytics";
+import { getLeadSource } from "@/components/lead-source-tracker";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -77,6 +78,7 @@ function QuotePopup({ onClose }: { onClose: () => void }) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        attribution: getLeadSource(),
         type: "quote",
         subject: `Quote request from ${form.name || "Website visitor"}`,
         fields: {

@@ -116,12 +116,31 @@ paused (`autoDraftOn()` in `src/lib/concepts.ts`): requests start as "Needs
 writing", no draft alert goes out, and the team writes them by hand on the same
 page. The prospect's acknowledgement is a plain receipt either way.
 
+## Lead sources
+Every form (contact, quote, agency, free concepts) and every package checkout
+records where the lead came from (`src/lib/lead-source.ts`). The browser
+(`src/components/lead-source-tracker.tsx`, in the root layout, public pages
+only) keeps the first visit and the latest visit with a source (utm tags, ad
+click IDs, referring site) in localStorage `sb_source` for 90 days and sends
+them with the form. The server names the channel (Paid search, Paid social,
+Organic search, Organic social, AI assistant, Email, Referral, Other campaign,
+Direct) and adds city, region and country from Vercel's geo headers and the
+device; the IP is never stored. The source goes in the team alert, the CRM
+message, the lead record (`source` on leads, concept requests and portal
+orders), Stripe metadata (`src_*`, so paid orders keep it), the studio pages
+("Where they came from") and the growth board. Tag outreach links with
+`utm_source`, `utm_medium` and `utm_campaign` so they show up by name. The
+CRM only receives leads from production (`VERCEL_ENV`), never from local runs
+or previews.
+
 ## Growth board
 `/portal/growth` is the owner's only: it opens with the owner's own key (the
 Growth board button on the owner's dashboard). It shows live numbers from the site's own records: enquiries (form leads at
 `portal/leads/<id>.json` plus concept requests), concepts sent, paid orders,
-revenue (`amountCents` on each order), conversion rates, revenue by package, the
-last 8 weeks and recent activity. Only leads sent after this shipped are counted.
+revenue (`amountCents` on each order), conversion rates, revenue by package,
+enquiries, orders and revenue by channel, enquiries by country, the last 8
+weeks and recent activity. An order's channel is its checkout's source, else
+the first enquiry with the same email (quotes). Only leads sent after this shipped are counted.
 
 ## Business details
 Scribebunny is a small animation studio that loves to draw and tell stories;

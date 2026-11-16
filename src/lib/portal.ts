@@ -7,6 +7,7 @@ import {
 } from "@/lib/access";
 import { filesFolder, type Attachment } from "@/lib/attachments";
 import type { Review } from "@/lib/launch";
+import type { LeadSource } from "@/lib/lead-source";
 import type { ProspectFollowUps } from "@/lib/prospect-follow-ups";
 import { sendCustomerEmail, unsubscribeHeaders } from "@/lib/email";
 import { randomBytes } from "node:crypto";
@@ -105,6 +106,8 @@ export type PortalOrder = {
   demo?: boolean;
   /** Created by the team from the dashboard, with a custom price. */
   manual?: boolean;
+  /** Where the buyer came from (package checkouts from 2026-11-16 on). */
+  source?: LeadSource;
   /**
    * Custom-price portals only: "awaiting" until the client pays with the Pay
    * button (Stripe) or the team marks it paid. Package orders are paid at checkout.
@@ -306,6 +309,7 @@ export async function openPortal(order: Order): Promise<PortalOrder> {
     clientKey: newKey(),
     invoiceUrl: order.invoiceUrl,
     dashboardUrl: order.dashboardUrl,
+    source: order.source,
     videos: newVideos(count, now),
     messages: order.topic
       ? [
