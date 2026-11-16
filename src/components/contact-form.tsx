@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { gtag } from "@/components/google-analytics";
+import { getLeadSource } from "@/components/lead-source-tracker";
 
 type LeadForm = {
   name: string;
@@ -47,6 +48,7 @@ export function ContactForm({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        attribution: getLeadSource(),
         type: "strategy",
         subject: `Scribebunny lead from ${form.name || "Website visitor"}`,
         fields: {

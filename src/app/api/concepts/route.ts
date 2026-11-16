@@ -1,6 +1,7 @@
 import { after, NextResponse } from "next/server";
 import { autoDraftOn, draftConcepts, requestConcepts } from "@/lib/concepts";
 import { forwardToCrm } from "@/lib/crm";
+import { leadSource, sourceSummary } from "@/lib/lead-source";
 
 // Drafting runs after the response (website research + DeepSeek), when on.
 export const maxDuration = 120;
@@ -45,7 +46,8 @@ export async function POST(request: Request) {
   }
 
   try {
-    const created = await requestConcepts(lead);
+    const source = leadSource(request, body.attribution);
+    const created = await requestConcepts(lead, source);
     after(async () => {
       await Promise.all([
         autoDraftOn()
@@ -55,7 +57,10 @@ export async function POST(request: Request) {
           : null,
         forwardToCrm({
           ...lead,
-          message: `Free 3 concepts request. ${lead.details ?? ""}`.trim(),
+          message: [
+            `Free 3 concepts request. ${lead.details ?? ""}`.trim(),
+            sourceSummary(source),
+          ].join("\n\n"),
         }),
       ]);
     });

@@ -22,6 +22,12 @@ import {
   openPortal,
   type PortalOrder,
 } from "@/lib/portal";
+import {
+  sourceFields,
+  sourceFromMetadata,
+  sourceMetadata,
+  type LeadSource,
+} from "@/lib/lead-source";
 import { PARENT_COMPANY } from "@/lib/site";
 
 /**
@@ -135,12 +141,19 @@ async function checkoutUrl(input: CheckoutInput): Promise<string> {
   return session.url;
 }
 
-export function createCheckout(videoPackage: VideoPackage, origin: string) {
+export function createCheckout(
+  videoPackage: VideoPackage,
+  origin: string,
+  source?: LeadSource,
+) {
   return checkoutUrl({
     productName: `Scribebunny ${videoPackage.name} Package`,
     description: packageSummary(videoPackage),
     amountCents: videoPackage.priceCents,
-    metadata: { package: videoPackage.id },
+    metadata: {
+      package: videoPackage.id,
+      ...(source ? sourceMetadata(source) : {}),
+    },
     successUrl: `${origin}/order-confirmed?session_id={CHECKOUT_SESSION_ID}`,
     cancelUrl: `${origin}/#pricing`,
     askForDetails: true,
@@ -186,6 +199,8 @@ export type Order = {
   paidAt: string;
   /** Set when this pays for a custom-price portal rather than a package. */
   portalRef?: string;
+  /** Where the buyer came from (Stripe metadata src_*). */
+  source?: LeadSource;
 };
 
 function customField(session: Stripe.Checkout.Session, key: string) {
@@ -244,6 +259,7 @@ async function loadOrder(sessionId: string) {
       ? `https://dashboard.stripe.com/${session.livemode ? "" : "test/"}payments/${paymentId}`
       : undefined,
     portalRef: session.metadata?.portal,
+    source: sourceFromMetadata(session.metadata),
     paidAt: new Date(session.created * 1000).toLocaleString("en-US", {
       timeZone: "America/Phoenix",
       dateStyle: "medium",
@@ -312,6 +328,7 @@ function orderFields(order: Order): [string, string | undefined][] {
     ["Invoice link", order.invoiceUrl],
     ["Stripe payment", order.dashboardUrl],
     ["Paid at", `${order.paidAt} (Arizona time)`],
+    ...sourceFields(order.source),
   ];
 }
 

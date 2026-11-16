@@ -7,6 +7,7 @@ import {
   brandedEmail,
   escapeHtml,
 } from "@/lib/email-layout";
+import { sourceFields, type LeadSource } from "@/lib/lead-source";
 import { formatUsd, VIDEO_SPEC, videoPackages } from "@/lib/packages";
 import { researchWebsite, type WebsiteResearch } from "@/lib/research";
 import { CALENDLY_URL, SITE_URL } from "@/lib/site";
@@ -58,6 +59,8 @@ export type ConceptRequest = {
   sentAt?: string;
   /** Reminders after the concepts went out (lib/prospect-follow-ups.ts). */
   followUps?: ProspectFollowUps;
+  /** Where the lead came from; missing on requests before 2026-11-16. */
+  source?: LeadSource;
 };
 
 const DEEPSEEK_URL = "https://api.deepseek.com/chat/completions";
@@ -100,13 +103,17 @@ function newId() {
 }
 
 /** Record a new request, tell the team, and confirm receipt to the prospect. */
-export async function requestConcepts(lead: ConceptRequest["lead"]) {
+export async function requestConcepts(
+  lead: ConceptRequest["lead"],
+  source?: LeadSource,
+) {
   const request: ConceptRequest = {
     id: newId(),
     createdAt: new Date().toISOString(),
     status: autoDraftOn() ? "drafting" : "failed",
     lead,
     concepts: [],
+    source,
   };
   await writeJson(requestPath(request.id), request, { onlyIfNew: true });
 
@@ -400,6 +407,7 @@ function leadFields(request: ConceptRequest): [string, string | undefined][] {
     ["Phone", request.lead.phone],
     ["Website", request.lead.website],
     ["Details", request.lead.details],
+    ...sourceFields(request.source),
   ];
 }
 

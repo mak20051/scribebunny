@@ -181,7 +181,7 @@ export default async function GrowthPage({ searchParams }: Props) {
   }
 
   const range: RangeKey = rawRange in RANGES ? (rawRange as RangeKey) : "30";
-  const { totals, funnel, byPackage, weeks, recent } =
+  const { totals, funnel, byPackage, byChannel, byCountry, weeks, recent } =
     await growthReport(range);
   const key = encodeURIComponent(k);
 
@@ -295,6 +295,64 @@ export default async function GrowthPage({ searchParams }: Props) {
           </div>
         </section>
       </div>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <section className="rounded-2xl border-[3px] border-gray-800 bg-white p-5">
+          <h2 className="text-lg font-bold text-gray-800">
+            Where enquiries come from
+          </h2>
+          <p className="mt-1 text-sm text-gray-600">
+            By channel, with the orders and revenue each brought in.
+          </p>
+          <div className="mt-4">
+            {byChannel.length ? (
+              <BarList
+                rows={byChannel.map((row) => ({
+                  label: row.channel,
+                  value: row.enquiries,
+                  display: `${row.enquiries} ${row.enquiries === 1 ? "enquiry" : "enquiries"}`,
+                  note: row.orders
+                    ? `${row.orders} ${row.orders === 1 ? "order" : "orders"}, ${formatUsd(row.revenueCents)}`
+                    : undefined,
+                }))}
+              />
+            ) : (
+              <p className="text-base text-gray-600">
+                No enquiries in this range yet.
+              </p>
+            )}
+          </div>
+        </section>
+        <section className="rounded-2xl border-[3px] border-gray-800 bg-white p-5">
+          <h2 className="text-lg font-bold text-gray-800">
+            Enquiries by country
+          </h2>
+          <p className="mt-1 text-sm text-gray-600">
+            From the visitor&apos;s connection, so roughly where they are.
+          </p>
+          <div className="mt-4">
+            {byCountry.length ? (
+              <BarList
+                rows={byCountry.map((row) => ({
+                  label: row.country,
+                  value: row.enquiries,
+                  display: String(row.enquiries),
+                }))}
+              />
+            ) : (
+              <p className="text-base text-gray-600">
+                No enquiries in this range yet.
+              </p>
+            )}
+          </div>
+        </section>
+      </div>
+      <p className="mt-3 text-sm text-gray-600">
+        Sources are recorded from Nov 16, 2026; earlier enquiries show as
+        &ldquo;Not recorded&rdquo;. Each lead&apos;s full source (campaign,
+        landing page, city, device) is in its alert email and on its studio
+        page.
+      </p>
 
       <section aria-label="Last 8 weeks" className="mt-8">
         <h2 className="font-display text-3xl font-bold text-gray-800">

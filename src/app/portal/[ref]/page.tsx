@@ -19,6 +19,7 @@ import {
 import { AutoRefresh } from "@/components/auto-refresh";
 import { FollowUpStatus } from "@/components/follow-up-status";
 import { LaunchKit } from "@/components/launch-kit";
+import { LeadSourceDetails } from "@/components/lead-source-details";
 import { LocalTime } from "@/components/local-time";
 import { MessageComposer } from "@/components/message-composer";
 import { PortalShell } from "@/components/portal-shell";
@@ -399,6 +400,9 @@ export default async function PortalOrderPage({ params, searchParams }: Props) {
                 </SubmitButton>
               </form>
             </div>
+            {order.source ? (
+              <LeadSourceDetails source={order.source} className="mt-6" />
+            ) : null}
             <div className="mt-6 border-t-2 border-dashed border-gray-200 pt-6">
               <label className="block text-base font-bold text-gray-800">
                 Client&rsquo;s private link

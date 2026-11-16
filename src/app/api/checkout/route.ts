@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { leadSource } from "@/lib/lead-source";
 import { findVideoPackage } from "@/lib/packages";
 import { createCheckout, paymentsEnabled } from "@/lib/payments";
 
@@ -11,16 +12,20 @@ export async function POST(request: Request) {
     );
   }
 
-  const { packageId } = (await request.json().catch(() => ({}))) as {
-    packageId?: string;
-  };
+  const { packageId, attribution } = (await request
+    .json()
+    .catch(() => ({}))) as { packageId?: string; attribution?: unknown };
   const videoPackage = findVideoPackage(packageId);
   if (!videoPackage) {
     return NextResponse.json({ error: "Unknown package." }, { status: 400 });
   }
 
   try {
-    const url = await createCheckout(videoPackage, new URL(request.url).origin);
+    const url = await createCheckout(
+      videoPackage,
+      new URL(request.url).origin,
+      leadSource(request, attribution),
+    );
     return NextResponse.json({ url });
   } catch (error) {
     console.error("Checkout session failed", error);

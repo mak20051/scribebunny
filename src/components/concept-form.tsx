@@ -3,6 +3,7 @@
 import { PartyPopper } from "lucide-react";
 import { useState } from "react";
 import { gtag } from "@/components/google-analytics";
+import { getLeadSource } from "@/components/lead-source-tracker";
 
 type ConceptLead = {
   name: string;
@@ -41,7 +42,7 @@ export function ConceptForm() {
       const response = await fetch("/api/concepts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, attribution: getLeadSource() }),
       });
       const data = (await response.json().catch(() => ({}))) as {
         error?: string;

@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import type { LeadSource } from "@/lib/lead-source";
 import { listPaths, readJson, writeJson } from "@/lib/store";
 
 /**
@@ -16,6 +17,8 @@ export type StoredLead = {
   email: string;
   phone?: string;
   website?: string;
+  /** Where the lead came from; missing on leads before 2026-11-16. */
+  source?: LeadSource;
 };
 
 export async function recordLead(lead: Omit<StoredLead, "id" | "createdAt">) {

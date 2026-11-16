@@ -1,4 +1,5 @@
 import { listConceptRequests, type ConceptRequest } from "@/lib/concepts";
+import type { LeadSource } from "@/lib/lead-source";
 import { listLeads, type StoredLead } from "@/lib/leads";
 import {
   isPaid,
@@ -16,6 +17,8 @@ import {
  *   orders, revenue ────────────────────────────────────────▶ orders/ once paid (Stripe
  *                                                              or marked paid), by payment date
  *   concept → order ── a concept request whose email later placed an order
+ *   by channel ── each enquiry's own source; an order's from its checkout, else
+ *                 from the first enquiry with the same email (quotes)
  *
  * The board is the owner's only: it opens with the owner's own key (lib/access.ts).
  */
@@ -38,6 +41,17 @@ export type WeekRow = {
 };
 
 export type Activity = { at: string; kind: string; label: string };
+
+export type ChannelRow = {
+  channel: string;
+  enquiries: number;
+  orders: number;
+  revenueCents: number;
+};
+
+const NOT_RECORDED = "Not recorded";
+const channelOf = (source?: LeadSource) =>
+  !source || source.channel === "Unknown" ? NOT_RECORDED : source.channel;
 
 /** Paid amount in cents; older orders only stored a formatted amount like "$1,199.00". */
 export function orderCents(order: PortalOrder) {
@@ -142,10 +156,92 @@ export async function growthReport(range: RangeKey) {
     }, {}),
   ).sort((a, b) => b.revenueCents - a.revenueCents);
 
+  // An order's source: its checkout, else the first enquiry with that email.
+  const sourceByEmail = new Map<string, LeadSource>();
+  [
+    ...leads.map((lead) => ({
+      email: lead.email,
+      at: lead.createdAt,
+      source: lead.source,
+    })),
+    ...concepts.map((request) => ({
+      email: request.lead.email,
+      at: request.createdAt,
+      source: request.source,
+    })),
+  ]
+    .sort((a, b) => a.at.localeCompare(b.at))
+    .forEach(({ email, source }) => {
+      const key = email.toLowerCase();
+      if (source && !sourceByEmail.has(key)) sourceByEmail.set(key, source);
+    });
+
+  const channels = new Map<string, ChannelRow>();
+  const channelRow = (channel: string) => {
+    let row = channels.get(channel);
+    if (!row) {
+      row = { channel, enquiries: 0, orders: 0, revenueCents: 0 };
+      channels.set(channel, row);
+    }
+    return row;
+  };
+  const rangeSources = [
+    ...rangeLeads.map((lead) => lead.source),
+    ...rangeConcepts.map((request) => request.source),
+  ];
+  for (const source of rangeSources)
+    channelRow(channelOf(source)).enquiries += 1;
+  for (const order of rangeOrders) {
+    const row = channelRow(
+      channelOf(
+        order.source ?? sourceByEmail.get(order.client.email.toLowerCase()),
+      ),
+    );
+    row.orders += 1;
+    row.revenueCents += orderCents(order);
+  }
+  const byChannel = [...channels.values()].sort(
+    (a, b) =>
+      Number(a.channel === NOT_RECORDED) - Number(b.channel === NOT_RECORDED) ||
+      b.enquiries - a.enquiries ||
+      b.revenueCents - a.revenueCents,
+  );
+
+  const countryCounts = new Map<string, number>();
+  for (const source of rangeSources) {
+    const country = source?.country ?? NOT_RECORDED;
+    countryCounts.set(country, (countryCounts.get(country) ?? 0) + 1);
+  }
+  const countries = [...countryCounts.entries()]
+    .map(([country, enquiries]) => ({ country, enquiries }))
+    .sort(
+      (a, b) =>
+        Number(a.country === NOT_RECORDED) -
+          Number(b.country === NOT_RECORDED) || b.enquiries - a.enquiries,
+    );
+  // Top 8; the rest fold into "Other countries".
+  const named = countries.filter((row) => row.country !== NOT_RECORDED);
+  const byCountry = [
+    ...named.slice(0, 8),
+    ...(named.length > 8
+      ? [
+          {
+            country: "Other countries",
+            enquiries: named
+              .slice(8)
+              .reduce((sum, row) => sum + row.enquiries, 0),
+          },
+        ]
+      : []),
+    ...countries.filter((row) => row.country === NOT_RECORDED),
+  ];
+
   return {
     totals,
     funnel,
     byPackage,
+    byChannel,
+    byCountry,
     weeks: weeklyRows(leads, concepts, orders, 8),
     recent: recentActivity(leads, concepts, orders, 12),
   };
@@ -202,12 +298,12 @@ function recentActivity(
     ...leads.map((lead) => ({
       at: lead.createdAt,
       kind: "Lead",
-      label: `${lead.name || lead.email} (${lead.type} form)`,
+      label: `${lead.name || lead.email} (${lead.type} form${lead.source ? ` · ${lead.source.channel}` : ""})`,
     })),
     ...concepts.map((request) => ({
       at: request.createdAt,
       kind: "Concepts asked",
-      label: request.lead.name,
+      label: `${request.lead.name}${request.source ? ` (${request.source.channel})` : ""}`,
     })),
     ...concepts
       .filter((request) => request.sentAt)
