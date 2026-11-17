@@ -115,42 +115,62 @@ function PackageTable({ bestFor }: { bestFor: PricingBestFor }) {
       bestFor: bestFor.bulk,
     },
   ];
+  // Below md each row stacks as a small card with the column name before each
+  // value; from md up it is a normal table.
+  const label =
+    "before:mr-2 before:text-sm before:font-bold before:uppercase before:tracking-wide before:text-gray-500 before:content-[attr(data-label)] md:before:hidden";
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-left text-lg text-gray-700">
-        <thead>
-          <tr className="border-b-4 border-gray-800 text-base uppercase tracking-wide text-gray-800">
-            <th scope="col" className="py-3 pr-4">
-              Package
-            </th>
-            <th scope="col" className="py-3 pr-4">
-              Price
-            </th>
-            <th scope="col" className="py-3 pr-4">
-              Per video
-            </th>
-            <th scope="col" className="py-3">
-              Best for
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr
-              key={row.key}
-              className="border-b-2 border-dashed border-gray-300"
+    <table className="block w-full border-collapse text-left text-lg text-gray-700 md:table">
+      <thead className="sr-only md:not-sr-only md:table-header-group">
+        <tr className="border-b-4 border-gray-800 text-base uppercase tracking-wide text-gray-800">
+          <th scope="col" className="py-3 pr-4">
+            Package
+          </th>
+          <th scope="col" className="py-3 pr-4">
+            Price
+          </th>
+          <th scope="col" className="py-3 pr-4">
+            Per video
+          </th>
+          <th scope="col" className="py-3">
+            Best for
+          </th>
+        </tr>
+      </thead>
+      <tbody className="block md:table-row-group">
+        {rows.map((row) => (
+          <tr
+            key={row.key}
+            className="block border-b-2 border-dashed border-gray-300 py-4 md:table-row md:py-0"
+          >
+            <th
+              scope="row"
+              className="block pb-1 text-xl font-bold text-gray-800 md:table-cell md:py-4 md:pr-4 md:text-lg"
             >
-              <th scope="row" className="py-4 pr-4 font-bold text-gray-800">
-                {row.name}
-              </th>
-              <td className="py-4 pr-4 font-bold">{row.price}</td>
-              <td className="py-4 pr-4">{row.perVideo}</td>
-              <td className="py-4">{row.bestFor}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+              {row.name}
+            </th>
+            <td
+              data-label="Price"
+              className={`block font-bold md:table-cell md:py-4 md:pr-4 ${label}`}
+            >
+              {row.price}
+            </td>
+            <td
+              data-label="Per video"
+              className={`block md:table-cell md:py-4 md:pr-4 ${label}`}
+            >
+              {row.perVideo}
+            </td>
+            <td
+              data-label="Best for"
+              className={`block md:table-cell md:py-4 ${label}`}
+            >
+              {row.bestFor}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 
