@@ -286,4 +286,18 @@ export const fullPortfolio: Video[] = [
     summary:
       "A product story style designed to simplify a technical offer for first-time visitors.",
   },
+  {
+    id: "rzzwRmUtBqE",
+    title: "Law firm explainer video (2023)",
+    category: "Lawyers",
+    summary:
+      "Animated explainer video for a law firm, made by Scribebunny (2023).",
+  },
+  {
+    id: "ZBlGjCvayLk",
+    title: "Lawyer explainer video (2025)",
+    category: "Lawyers",
+    summary:
+      "Animated explainer video for a lawyer, made by Scribebunny (2025).",
+  },
 ];

@@ -1,15 +1,32 @@
 import {
+  Gavel,
   Handshake,
   GraduationCap,
   MonitorPlay,
   MousePointerClick,
   Puzzle,
+  Scale,
   TrendingUp,
   type LucideIcon,
 } from "lucide-react";
 import type { Faq } from "@/components/marketing";
-import { serviceCostFaq } from "@/lib/faqs";
-import type { ServiceSection } from "@/components/service-page-template";
+import { costFaq, serviceCostFaq } from "@/lib/faqs";
+import type {
+  PricingBestFor,
+  ServiceSection,
+} from "@/components/service-page-template";
+import { formatUsd, VIDEO_SPEC, videoPackages } from "@/lib/packages";
+import { CALENDLY_URL, CLIENT_COUNT_DISPLAY, FOUNDING_YEAR } from "@/lib/site";
+
+const [singlePackage, fivePackage, tenPackage] = videoPackages;
+
+/** "Delivered in 24 to 48 hours" -> "delivered in 24 to 48 hours". */
+function lowerFirst(text: string) {
+  return text.charAt(0).toLowerCase() + text.slice(1);
+}
+function upperFirst(text: string) {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
 
 /**
  * Every landing page served by the [vertical] route (src/app/[vertical]).
@@ -35,11 +52,21 @@ export type Vertical = {
   title: string;
   description: string;
   primaryCta: string;
+  /** Primary button target; defaults to the Calendly page. */
+  primaryHref?: string;
   secondaryCta: string;
   secondaryHref?: string;
   sections: ServiceSection[];
+  /**
+   * Pricing copy. Never type a price here: build it from lib/packages.ts
+   * (via costFaq or formatUsd). The page shows the pricing block, with a
+   * package table, only when `pricingTable` is set.
+   */
   pricingTitle: string;
   pricingBody: string;
+  pricingTable?: PricingBestFor;
+  /** Sections shown after the pricing block. */
+  sectionsAfterPricing?: ServiceSection[];
   faqs: Faq[];
   /** Portfolio videos shown on the page: those in this portfolio category, first `portfolioLimit`. */
   portfolioCategory: string;
@@ -51,6 +78,11 @@ export type Vertical = {
   finalTitle: string;
   finalBody: string;
   finalSecondary: string;
+  finalSecondaryHref?: string;
+  /** Show phone and email in the final call to action. */
+  finalContact?: boolean;
+  /** Add a Service schema (with the package offers) to the page. */
+  serviceSchema?: boolean;
   topDoodle: LucideIcon;
   sideDoodle: LucideIcon;
 };
@@ -138,8 +170,7 @@ export const verticals: Vertical[] = [
       },
     ],
     pricingTitle: "Starting point",
-    pricingBody:
-      "SaaS explainer video packages typically start from $3,500 depending on scope, length, style, and production requirements.",
+    pricingBody: costFaq.answer,
     faqs: [
       {
         question: "What is a SaaS explainer video?",
@@ -259,8 +290,7 @@ export const verticals: Vertical[] = [
       },
     ],
     pricingTitle: "Starting point",
-    pricingBody:
-      "Product demo and onboarding video packages typically start from $2,500 depending on complexity, number of workflows, and format requirements.",
+    pricingBody: costFaq.answer,
     faqs: [
       {
         question:
@@ -310,7 +340,8 @@ export const verticals: Vertical[] = [
     changeFrequency: "monthly",
     priority: 0.8,
     heroLabel: "Built for agencies that need a trusted production partner",
-    title: "White-Label Video Production for Agencies That Need Reliable Delivery",
+    title:
+      "White-Label Video Production for Agencies That Need Reliable Delivery",
     description:
       "Scribebunny helps agencies fulfill explainer, demo, onboarding, and video production needs behind the scenes, with dependable communication, clear workflow, and scalable delivery.",
     primaryCta: "Book a Strategy Call",
@@ -382,8 +413,7 @@ export const verticals: Vertical[] = [
       },
     ],
     pricingTitle: "Engagement model",
-    pricingBody:
-      "White-label agency partnerships are typically scoped as custom engagements or monthly support plans, with starting points from $5,000 depending on volume, delivery model, and service mix.",
+    pricingBody: costFaq.answer,
     faqs: [
       {
         question: "What does white-label video production mean?",
@@ -419,6 +449,150 @@ export const verticals: Vertical[] = [
     finalSecondary: "Agency Partner Inquiry",
     topDoodle: Handshake,
     sideDoodle: Puzzle,
+  },
+  {
+    slug: "explainer-videos-for-lawyers",
+    name: "Explainer Videos for Lawyers",
+    summary: `An explainer video for lawyers is a short animated video, ${VIDEO_SPEC.length}, that explains one thing your clients keep asking about: what a claim involves, how a case moves, what happens at your first meeting.`,
+    metaTitle: `Explainer Videos for Lawyers | From ${formatUsd(singlePackage.priceCents)} | Scribebunny`,
+    metaDescription:
+      "Animated explainer videos for lawyers and law firms: script, storyboard, animation and voiceover. Start with 3 free concepts.",
+    lastModified: "2026-11-17",
+    changeFrequency: "monthly",
+    priority: 0.8,
+    heroLabel:
+      "Built for law firms that want clients to understand the process",
+    title: "Animated Explainer Videos for Lawyers and Law Firms",
+    description: `An explainer video for lawyers is a short animated video, ${VIDEO_SPEC.length}, that explains one thing your clients keep asking about: what a claim involves, how a case moves, what happens at your first meeting. Scribebunny writes the script, draws the storyboard, animates it and adds voiceover and music. Nobody from your firm has to appear on camera. One video starts at ${formatUsd(singlePackage.priceCents)}, and you can see 3 free concepts before you pay for anything.`,
+    primaryCta: "Get 3 Free Concepts",
+    primaryHref: "/free-concepts",
+    secondaryCta: "Book a Call",
+    secondaryHref: CALENDLY_URL,
+    sections: [
+      {
+        title: "What an explainer video does for a law firm",
+        body: "Many people who contact a law firm are unsure what happens next. Questions like how long it takes, what to bring and what it costs to start tend to repeat.\n\nA short animated video answers those once, in plain language, on the page where the question comes up. It can sit on a practice-area page, in a follow-up email or in a social post.\n\nAnimation also means no filming day. There are no staff on camera and no client footage in the video. You give us the topic and your own wording for anything that needs to be exact, and we do the drawing.",
+      },
+      {
+        title: "Videos law firms ask us for",
+        items: [
+          {
+            lead: "Practice-area explainer.",
+            text: "One video per practice area, placed on that service page. It says who the practice area is for and what a first step looks like.",
+          },
+          {
+            lead: "How the process works.",
+            text: "The stages of a case or claim, in order, so clients know what to expect.",
+          },
+          {
+            lead: "Firm introduction.",
+            text: "A short homepage video on who you help and how a first conversation goes.",
+          },
+          {
+            lead: "FAQ-answer clips.",
+            text: "One question per video, 30 to 60 seconds, for pages and emails that answer common questions.",
+          },
+          {
+            lead: "Social cuts.",
+            text: "A shorter version of any of the above for the channels your firm already uses.",
+          },
+        ],
+      },
+    ],
+    pricingTitle: "Explainer video cost for lawyers: pricing",
+    pricingBody: `Every video is ${VIDEO_SPEC.length} and includes the script, a hand-drawn storyboard, whiteboard or 2D animation, voiceover and music, ${VIDEO_SPEC.revisions}, and an ${VIDEO_SPEC.delivery} that you own.`,
+    pricingTable: {
+      single: `One clear video, such as a practice-area page; ${lowerFirst(singlePackage.turnaround)}`,
+      five: `A series, such as a video for each practice area; ${lowerFirst(fivePackage.turnaround)}`,
+      ten: `Ongoing campaigns and a larger library; ${lowerFirst(tenPackage.turnaround)}`,
+      bulk: "More than 10 videos",
+    },
+    sectionsAfterPricing: [
+      {
+        title: "How it works",
+        items: [
+          {
+            lead: "Free concepts.",
+            text: "Tell us about your firm and what the video should explain. We read your website and send 3 different story directions within 24 hours, reviewed by our storytellers. There is no cost and no commitment.",
+          },
+          {
+            lead: "Brief.",
+            text: "After you order, you get a private project portal. Send your brief there: your website, what the video should explain, who it is for, and your logo and colors.",
+          },
+          {
+            lead: "Script and storyboard.",
+            text: "We write the script and sketch a hand-drawn storyboard for your review.",
+          },
+          {
+            lead: "Animation and delivery.",
+            text: `We animate it, add voiceover and music, and deliver an ${VIDEO_SPEC.delivery}. ${upperFirst(VIDEO_SPEC.revisions)} are included, and you own the finished video.`,
+          },
+        ],
+        ordered: true,
+        footnote: `Scribebunny has been making animated videos since ${FOUNDING_YEAR} for ${CLIENT_COUNT_DISPLAY} clients.`,
+      },
+      {
+        title: "Disclaimers, languages and review",
+        items: [
+          {
+            lead: "Disclaimers.",
+            text: "If your firm uses a disclaimer on its marketing, we can add it to the video as on-screen text. You supply the wording; we do not write legal text for you.",
+          },
+          {
+            lead: "Languages.",
+            text: "We can make videos in languages other than English. Tell us which language you need when you order.",
+          },
+          {
+            lead: "Your advertising rules.",
+            text: "Rules for lawyer advertising differ by state and by jurisdiction. You, not Scribebunny, are responsible for checking the rules that apply to your firm and for approving the final video before it goes live. We do not offer legal advice or promise that a video meets any rule. This is general information, not legal advice.",
+          },
+        ],
+      },
+    ],
+    faqs: [
+      serviceCostFaq("law firm explainer video"),
+      {
+        question: "How long is a law firm explainer video?",
+        answer: `${upperFirst(VIDEO_SPEC.length)}. That is enough time to explain one practice area or one stage of a case.`,
+      },
+      {
+        question: "Do I need to be on camera?",
+        answer:
+          "No. The video is animated with a voiceover, so nobody from your firm needs to be filmed. You review the script and storyboard before we animate.",
+      },
+      {
+        question:
+          "Can you add a disclaimer or make the video in another language?",
+        answer:
+          "Yes to both. We can add disclaimer text on screen, and you provide the wording. We can also make videos in languages other than English; tell us which one you need when you order.",
+      },
+      {
+        question: "How fast can I get a law firm explainer video?",
+        answer: `A single video is ${lowerFirst(singlePackage.turnaround)}. For 5 or 10 videos, we plan the delivery schedule with you.`,
+      },
+      {
+        question: "Do lawyer videos need to follow advertising rules?",
+        answer:
+          "Rules for lawyer advertising differ by state, so check the ones that apply to your firm before you publish. We do not give legal advice.",
+      },
+      {
+        question: "Who owns the video?",
+        answer: `You do. The finished ${VIDEO_SPEC.delivery} is yours to keep and use.`,
+      },
+    ],
+    portfolioCategory: "Lawyers",
+    portfolioLimit: 2,
+    portfolioTitle: "Law firm explainer video examples",
+    portfolioDescription: "Animated explainer videos we have made for lawyers.",
+    finalTitle: "See your firm's video before you buy",
+    finalBody:
+      "Tell us what you want a client to understand. We will send 3 free concepts within 24 hours, no commitment.",
+    finalSecondary: "Book a 30-minute call",
+    finalSecondaryHref: CALENDLY_URL,
+    finalContact: true,
+    serviceSchema: true,
+    topDoodle: Scale,
+    sideDoodle: Gavel,
   },
 ];
 

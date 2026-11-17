@@ -118,6 +118,14 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
                     White-Label Production
                   </Link>
                 </li>
+                <li>
+                  <Link
+                    href="/explainer-videos-for-lawyers"
+                    className="hover:text-[#FF3333]"
+                  >
+                    Lawyers
+                  </Link>
+                </li>
               </ul>
             </div>
 

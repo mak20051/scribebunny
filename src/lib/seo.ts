@@ -135,6 +135,38 @@ export function videoPackagesSchema() {
   };
 }
 
+/** Service schema for one landing page, with the package offers pointing at that page. */
+export function pageServiceSchema({
+  name,
+  description,
+  path,
+}: {
+  name: string;
+  description: string;
+  path: string;
+}) {
+  const url = pageUrl(path);
+  return {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    name,
+    description,
+    serviceType: "Video production",
+    provider: { "@id": ORGANIZATION_ID },
+    url,
+    areaServed: { "@type": "Country", name: "US" },
+    offers: videoPackages.map((videoPackage) => ({
+      "@type": "Offer",
+      name: `${videoPackage.name} package`,
+      description: videoPackage.turnaround,
+      price: (videoPackage.priceCents / 100).toFixed(2),
+      priceCurrency: "USD",
+      availability: "https://schema.org/InStock",
+      url,
+    })),
+  };
+}
+
 export function breadcrumbSchema(name: string, path: string) {
   return {
     "@context": "https://schema.org",

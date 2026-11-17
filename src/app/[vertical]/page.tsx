@@ -4,7 +4,12 @@ import { AgencyInquiryForm } from "@/components/agency-inquiry-form";
 import { JsonLd } from "@/components/json-ld";
 import { ServicePageTemplate } from "@/components/service-page-template";
 import { fullPortfolio } from "@/lib/portfolio";
-import { breadcrumbSchema, faqSchema, pageMetadata } from "@/lib/seo";
+import {
+  breadcrumbSchema,
+  faqSchema,
+  pageMetadata,
+  pageServiceSchema,
+} from "@/lib/seo";
 import { getVertical, verticals } from "@/lib/verticals";
 
 // Only slugs listed in src/lib/verticals.ts exist; anything else is a 404.
@@ -34,6 +39,15 @@ export default async function VerticalPage({ params }: Props) {
 
   return (
     <>
+      {vertical.serviceSchema ? (
+        <JsonLd
+          data={pageServiceSchema({
+            name: vertical.name,
+            description: vertical.metaDescription,
+            path: `/${vertical.slug}`,
+          })}
+        />
+      ) : null}
       <JsonLd data={faqSchema(vertical.faqs)} />
       <JsonLd data={breadcrumbSchema(vertical.name, `/${vertical.slug}`)} />
       <ServicePageTemplate
@@ -41,11 +55,14 @@ export default async function VerticalPage({ params }: Props) {
         title={vertical.title}
         description={vertical.description}
         primaryCta={vertical.primaryCta}
+        primaryHref={vertical.primaryHref}
         secondaryCta={vertical.secondaryCta}
         secondaryHref={vertical.secondaryHref}
         sections={vertical.sections}
         pricingTitle={vertical.pricingTitle}
         pricingBody={vertical.pricingBody}
+        pricingTable={vertical.pricingTable}
+        sectionsAfterPricing={vertical.sectionsAfterPricing}
         faqs={vertical.faqs}
         portfolioTitle={vertical.portfolioTitle}
         portfolioDescription={vertical.portfolioDescription}
@@ -77,6 +94,8 @@ export default async function VerticalPage({ params }: Props) {
         finalTitle={vertical.finalTitle}
         finalBody={vertical.finalBody}
         finalSecondary={vertical.finalSecondary}
+        finalSecondaryHref={vertical.finalSecondaryHref}
+        finalContact={vertical.finalContact}
         topDoodle={vertical.topDoodle}
         sideDoodle={vertical.sideDoodle}
       />
