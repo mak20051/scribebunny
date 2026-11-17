@@ -124,15 +124,21 @@ export function FinalCta({
   title,
   description,
   primary,
+  primaryHref = CALENDLY_URL,
   secondary,
   secondaryHref,
+  extra,
 }: {
   title: string;
   description: string;
   primary: string;
+  primaryHref?: string;
   secondary: string;
   secondaryHref?: string;
+  extra?: React.ReactNode;
 }) {
+  const primaryExternal = primaryHref.startsWith("http");
+  const secondaryExternal = !!secondaryHref?.startsWith("http");
   return (
     <section
       id="contact-cta"
@@ -159,20 +165,23 @@ export function FinalCta({
         </p>
         <div className="mb-6 mt-8 flex flex-wrap justify-center gap-4">
           <a
-            href={CALENDLY_URL}
-            target="_blank"
-            rel="noreferrer"
+            href={primaryHref}
+            target={primaryExternal ? "_blank" : undefined}
+            rel={primaryExternal ? "noreferrer" : undefined}
             className="btn-primary border-gray-800 bg-gray-800 shadow-gray-600"
           >
             {primary}
           </a>
           <a
             href={secondaryHref || "/contact#contact-form"}
+            target={secondaryExternal ? "_blank" : undefined}
+            rel={secondaryExternal ? "noreferrer" : undefined}
             className="btn-secondary bg-white"
           >
             {secondary}
           </a>
         </div>
+        {extra}
         <p className="font-bold text-gray-700">
           Free consultation • No commitment • Response within 24 hours
         </p>

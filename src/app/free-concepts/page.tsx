@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import {
   Clapperboard,
   Mail,
@@ -120,6 +121,16 @@ export default function FreeConceptsPage() {
                   </li>
                 ))}
               </ul>
+              <p className="mt-6 text-left text-gray-700">
+                Running a firm?{" "}
+                <Link
+                  href="/explainer-videos-for-lawyers"
+                  className="font-bold text-[#FF3333] underline"
+                >
+                  See explainer videos for law firms
+                </Link>
+                .
+              </p>
             </div>
             <div
               id="concept-form"
