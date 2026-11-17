@@ -38,9 +38,18 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  if (!lead.website && !lead.details) {
+  if (!lead.website || !/^\S+\.\S+$/.test(lead.website)) {
     return NextResponse.json(
-      { error: "Add your website or a few lines about your business." },
+      { error: "Please enter your website address, like yourcompany.com." },
+      { status: 400 },
+    );
+  }
+  if (!lead.details) {
+    return NextResponse.json(
+      {
+        error:
+          "Please tell us what the video should explain, and who it's for.",
+      },
       { status: 400 },
     );
   }

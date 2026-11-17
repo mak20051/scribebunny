@@ -46,7 +46,7 @@ const steps = [
   {
     icon: PenTool,
     title: "Tell us about your business",
-    text: "Your name, business email, phone, and website or a few lines about what you do.",
+    text: "Your name, business email, phone, website, and a few lines on what the video should explain.",
   },
   {
     icon: Sparkles,
@@ -129,8 +129,8 @@ export default function FreeConceptsPage() {
                 Where should we send your concepts?
               </h2>
               <p className="mt-2 mb-6 text-gray-700">
-                Your website helps us research. No website yet? Tell us what you
-                do instead.
+                We research your website, and your few lines tell us what the
+                video should explain.
               </p>
               <ConceptForm />
             </div>

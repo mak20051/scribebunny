@@ -32,8 +32,14 @@ export function ConceptForm() {
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!form.website.trim() && !form.details.trim()) {
-      setError("Add your website or a few lines about your business.");
+    if (!/^\S+\.\S+$/.test(form.website.trim())) {
+      setError("Please enter your website address, like yourcompany.com.");
+      return;
+    }
+    if (!form.details.trim()) {
+      setError(
+        "Please tell us what the video should explain, and who it's for.",
+      );
       return;
     }
     setError("");
@@ -119,16 +125,18 @@ export function ConceptForm() {
           type="text"
           inputMode="url"
           autoComplete="url"
-          placeholder="Your website"
+          placeholder="Your website *"
           className="form-input"
+          required
         />
       </div>
       <textarea
         value={form.details}
         onChange={(e) => update("details", e.target.value)}
         rows={4}
-        placeholder="What should the video explain, and who is it for? (Required if you don't have a website)"
+        placeholder="What should the video explain, and who is it for? *"
         className="form-input"
+        required
       />
       <input
         value={form.company}
