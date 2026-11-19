@@ -9,6 +9,7 @@ import {
   faqSchema,
   pageMetadata,
   pageServiceSchema,
+  videoObjectsSchema,
 } from "@/lib/seo";
 import { getVertical, verticals } from "@/lib/verticals";
 
@@ -36,6 +37,9 @@ export default async function VerticalPage({ params }: Props) {
   const { vertical: slug } = await params;
   const vertical = getVertical(slug);
   if (!vertical) notFound();
+  const portfolioVideos = fullPortfolio
+    .filter((video) => video.category === vertical.portfolioCategory)
+    .slice(0, vertical.portfolioLimit);
 
   return (
     <>
@@ -45,9 +49,15 @@ export default async function VerticalPage({ params }: Props) {
             name: vertical.name,
             description: vertical.metaDescription,
             path: `/${vertical.slug}`,
+            serviceType: vertical.serviceType,
           })}
         />
       ) : null}
+      {vertical.videoSchema
+        ? videoObjectsSchema(portfolioVideos).map((data) => (
+            <JsonLd key={data.embedUrl} data={data} />
+          ))
+        : null}
       <JsonLd data={faqSchema(vertical.faqs)} />
       <JsonLd data={breadcrumbSchema(vertical.name, `/${vertical.slug}`)} />
       <ServicePageTemplate
@@ -66,9 +76,7 @@ export default async function VerticalPage({ params }: Props) {
         faqs={vertical.faqs}
         portfolioTitle={vertical.portfolioTitle}
         portfolioDescription={vertical.portfolioDescription}
-        portfolioVideos={fullPortfolio
-          .filter((video) => video.category === vertical.portfolioCategory)
-          .slice(0, vertical.portfolioLimit)}
+        portfolioVideos={portfolioVideos}
         formSection={
           vertical.form === "agency" ? (
             <section
