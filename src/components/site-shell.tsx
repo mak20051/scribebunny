@@ -126,6 +126,14 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
                     Lawyers
                   </Link>
                 </li>
+                <li>
+                  <Link
+                    href="/explainer-videos-for-medical-practices"
+                    className="hover:text-[#FF3333]"
+                  >
+                    Medical Practices
+                  </Link>
+                </li>
               </ul>
             </div>
 

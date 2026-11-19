@@ -140,10 +140,12 @@ export function pageServiceSchema({
   name,
   description,
   path,
+  serviceType = "Video production",
 }: {
   name: string;
   description: string;
   path: string;
+  serviceType?: string;
 }) {
   const url = pageUrl(path);
   return {
@@ -151,7 +153,7 @@ export function pageServiceSchema({
     "@type": "Service",
     name,
     description,
-    serviceType: "Video production",
+    serviceType,
     provider: { "@id": ORGANIZATION_ID },
     url,
     areaServed: { "@type": "Country", name: "US" },
@@ -165,6 +167,23 @@ export function pageServiceSchema({
       url,
     })),
   };
+}
+
+/** VideoObject schema for YouTube videos that have a confirmed upload date. */
+export function videoObjectsSchema(
+  videos: { id: string; title: string; summary: string; uploadDate?: string }[],
+) {
+  return videos
+    .filter((video) => video.uploadDate)
+    .map((video) => ({
+      "@context": "https://schema.org",
+      "@type": "VideoObject",
+      name: video.title,
+      description: video.summary,
+      thumbnailUrl: `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`,
+      uploadDate: video.uploadDate,
+      embedUrl: `https://www.youtube.com/embed/${video.id}`,
+    }));
 }
 
 export function breadcrumbSchema(name: string, path: string) {

@@ -131,6 +131,16 @@ export default function FreeConceptsPage() {
                 </Link>
                 .
               </p>
+              <p className="mt-3 text-left text-gray-700">
+                Running a clinic?{" "}
+                <Link
+                  href="/explainer-videos-for-medical-practices"
+                  className="font-bold text-[#FF3333] underline"
+                >
+                  See patient education videos for clinics and small practices
+                </Link>
+                .
+              </p>
             </div>
             <div
               id="concept-form"

@@ -2,10 +2,12 @@ import {
   Gavel,
   Handshake,
   GraduationCap,
+  HeartPulse,
   MonitorPlay,
   MousePointerClick,
   Puzzle,
   Scale,
+  Stethoscope,
   TrendingUp,
   type LucideIcon,
 } from "lucide-react";
@@ -83,6 +85,10 @@ export type Vertical = {
   finalContact?: boolean;
   /** Add a Service schema (with the package offers) to the page. */
   serviceSchema?: boolean;
+  /** Service schema serviceType; defaults to "Video production". */
+  serviceType?: string;
+  /** Add VideoObject schema for the portfolio videos (each needs an uploadDate). */
+  videoSchema?: boolean;
   topDoodle: LucideIcon;
   sideDoodle: LucideIcon;
 };
@@ -593,6 +599,181 @@ export const verticals: Vertical[] = [
     serviceSchema: true,
     topDoodle: Scale,
     sideDoodle: Gavel,
+  },
+  {
+    slug: "explainer-videos-for-medical-practices",
+    name: "Explainer Videos for Medical Practices",
+    summary: `A patient education video for a clinic is a short animated video, ${VIDEO_SPEC.length}, that explains one thing your patients keep asking about: what a procedure involves, what to expect at a first visit, how aftercare works.`,
+    metaTitle: "Patient Education Videos for Clinics | Scribebunny",
+    metaDescription: `Animated patient education videos for clinics and small practices. Script, storyboard, voiceover and animation from ${formatUsd(singlePackage.priceCents)}. Start with 3 free concepts.`,
+    lastModified: "2026-11-19",
+    changeFrequency: "monthly",
+    priority: 0.8,
+    heroLabel:
+      "Built for small practices that want patients to understand what comes next",
+    title: "Patient Education Videos for Clinics and Small Practices",
+    description: `A patient education video for a clinic is a short animated video, ${VIDEO_SPEC.length}, that explains one thing your patients keep asking about: what a procedure involves, what to expect at a first visit, how aftercare works. Scribebunny writes the script, draws the storyboard, animates it and adds voiceover and music. Nobody from your practice appears on camera and no patient photos or footage are needed. One video starts at ${formatUsd(singlePackage.priceCents)}, and you can see 3 free concepts before you pay for anything.`,
+    primaryCta: "Get 3 Free Concepts",
+    primaryHref: "/free-concepts",
+    secondaryCta: "Book a 30-minute call",
+    secondaryHref: CALENDLY_URL,
+    sections: [
+      {
+        title: "Videos small practices use us for",
+        body: "Each one answers a question patients already ask. You give us the topic and your own wording for anything clinical; we do the drawing.",
+        items: [
+          {
+            lead: "Explain a procedure or treatment.",
+            text: "One video per service, placed on that service page or sent before an appointment. It walks through the steps in plain language, in the order you describe them.",
+          },
+          {
+            lead: 'New-patient "what to expect".',
+            text: "Booking, arriving, paperwork, the first visit. It answers the questions the front desk hears most.",
+          },
+          {
+            lead: "Condition and aftercare explainers.",
+            text: "One topic per video. The wording on anything clinical comes from your team, and your clinical team approves the script before we animate.",
+          },
+          {
+            lead: "Services overview for your website.",
+            text: "A short homepage video on who you help and what your practice offers.",
+          },
+          {
+            lead: "Social cuts.",
+            text: "A shorter version of any video above for the channels your practice already uses.",
+          },
+        ],
+      },
+      {
+        title: "Why a custom video instead of a library",
+        body: "Ready-made libraries and AI video tools are quick, and they suit some jobs. A library video is made for any practice. A custom video is made for yours: your services, your way of explaining things, your voice and colors.\n\nThat is the difference. If you need a stock explanation of a common topic, a library may be enough. If you want patients to see your practice, that is a custom video.",
+      },
+    ],
+    pricingTitle: "Patient education video cost: pricing",
+    pricingBody: `Every video is ${VIDEO_SPEC.length} and includes the script, a hand-drawn storyboard, whiteboard or 2D animation, voiceover and music, ${VIDEO_SPEC.revisions}, and an ${VIDEO_SPEC.delivery} that you own.`,
+    pricingTable: {
+      single: `One clear video, such as a service page; ${lowerFirst(singlePackage.turnaround)}`,
+      five: `A series, such as one video per service; ${lowerFirst(fivePackage.turnaround)}`,
+      ten: `An ongoing library of patient videos; ${lowerFirst(tenPackage.turnaround)}`,
+      bulk: "More than 10 videos",
+    },
+    sectionsAfterPricing: [
+      {
+        title: "How it works",
+        items: [
+          {
+            lead: "Free concepts.",
+            text: "Tell us about your practice and what the video should explain. We read your website and send 3 different story directions within 24 hours, reviewed by our storytellers. There is no cost and no commitment.",
+          },
+          {
+            lead: "Brief.",
+            text: "After you order, you get a private project portal. Send your brief there.",
+          },
+          {
+            lead: "Script and storyboard.",
+            text: "We write the script and sketch a hand-drawn storyboard. You review and approve both before we animate, so your clinical team can check the wording first.",
+          },
+          {
+            lead: "Animation and delivery.",
+            text: `We animate it, add voiceover and music, and tell you in the portal when it is ready for review. You send changes there; ${VIDEO_SPEC.revisions} are included, and you own the finished video.`,
+          },
+        ],
+        ordered: true,
+        footnote: `Scribebunny has been making animated videos since ${FOUNDING_YEAR} for ${CLIENT_COUNT_DISPLAY} clients.`,
+      },
+      {
+        title: "Languages, disclaimers and clinical wording",
+        items: [
+          {
+            lead: "Languages.",
+            text: "We can make versions in other languages. Tell us which one you need when you order.",
+          },
+          {
+            lead: "Disclaimers.",
+            text: "If your practice uses a disclaimer, we can add it to the video as on-screen text. You supply the wording.",
+          },
+          {
+            lead: "Clinical wording.",
+            text: "The practice has the final say on anything clinical. We do not write medical claims for you, and a video should supplement the conversation with your clinician, not replace it. We do not give legal or medical advice. Questions about the process?",
+            link: { label: "Contact us", href: "/contact" },
+          },
+        ],
+      },
+      {
+        title: "Video marketing for doctors: where to use these videos",
+        items: [
+          {
+            lead: "Service pages on your website.",
+            text: "One video per treatment or service, next to the text that describes it.",
+          },
+          {
+            lead: "YouTube.",
+            text: "Your own channel, so patients can find the video outside your site.",
+          },
+          {
+            lead: "Waiting-room screens.",
+            text: "A looped set of short videos while patients wait.",
+          },
+          {
+            lead: "Email and appointment reminders.",
+            text: 'A link to the "what to expect" video before a first visit.',
+          },
+          {
+            lead: "Social.",
+            text: "Shorter cuts for the channels your practice already uses.",
+          },
+        ],
+        footnote:
+          "Start with the question your front desk answers most often. That is usually the first video to make.",
+      },
+    ],
+    faqs: [
+      serviceCostFaq("patient education video"),
+      {
+        question: "How long are the videos?",
+        answer: `${upperFirst(VIDEO_SPEC.length)}. That is enough for one procedure, one service or one question.`,
+      },
+      {
+        question: "Do you need patient photos or footage?",
+        answer:
+          "No. The video is animated with a voiceover, so no patient images or footage are needed and nobody from your practice has to be filmed.",
+      },
+      {
+        question: "Can you make videos in other languages or add a disclaimer?",
+        answer:
+          "Yes. We can make versions in other languages, and we can add a disclaimer as on-screen text; you provide the wording.",
+      },
+      {
+        question: "How fast can I get a video?",
+        answer: `A single video is ${lowerFirst(singlePackage.turnaround)}. For 5 or 10 videos, we plan the delivery schedule with you.`,
+      },
+      {
+        question: "Will the video replace the doctor's explanation?",
+        answer:
+          "No. It is meant to support the conversation with your clinician, not replace it. Your practice has the final say on all clinical wording.",
+      },
+      {
+        question: "Who owns the video?",
+        answer: `You do. The finished ${VIDEO_SPEC.delivery} is yours to keep and use.`,
+      },
+    ],
+    portfolioCategory: "Medical",
+    portfolioLimit: 3,
+    portfolioTitle: "Clinic video examples",
+    portfolioDescription:
+      "Animated videos we have made for clinics and specialty practices.",
+    finalTitle: "See your practice's video before you buy",
+    finalBody:
+      "Tell us what you want patients to understand. We will send 3 free concepts within 24 hours, no commitment.",
+    finalSecondary: "Book a 30-minute call",
+    finalSecondaryHref: CALENDLY_URL,
+    finalContact: true,
+    serviceSchema: true,
+    serviceType:
+      "Patient education animated video production for medical practices",
+    videoSchema: true,
+    topDoodle: Stethoscope,
+    sideDoodle: HeartPulse,
   },
 ];
 

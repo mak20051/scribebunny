@@ -9,6 +9,8 @@ export type Video = {
   category: string;
   summary: string;
   isNew?: boolean;
+  /** ISO date (YYYY-MM-DD) of the YouTube upload; needed only for VideoObject schema. */
+  uploadDate?: string;
 };
 
 export function VideoCard({
