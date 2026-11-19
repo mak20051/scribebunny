@@ -5,6 +5,7 @@ import {
   Target,
   type LucideIcon,
 } from "lucide-react";
+import Link from "next/link";
 import { FinalCta, PageDivider, type Faq } from "@/components/marketing";
 import { SiteShell } from "@/components/site-shell";
 import { VideoCard, type Video } from "@/components/video-card";
@@ -23,11 +24,38 @@ export type ServiceSection = {
   body?: string;
   bullets?: string[];
   /** Bullets with a bold lead-in; rendered as a numbered list when `ordered`. */
-  items?: { lead: string; text: string }[];
+  items?: ServiceItem[];
   ordered?: boolean;
   /** One paragraph shown after the list. */
   footnote?: string;
 };
+
+export type ServiceItem = {
+  lead: string;
+  text: string;
+  /** Optional internal link shown after the text, e.g. { label: "Contact us", href: "/contact" }. */
+  link?: { label: string; href: string };
+};
+
+function ItemText({ item }: { item: ServiceItem }) {
+  return (
+    <>
+      <strong>{item.lead}</strong> {item.text}
+      {item.link ? (
+        <>
+          {" "}
+          <Link
+            href={item.link.href}
+            className="font-bold text-[#FF3333] underline"
+          >
+            {item.link.label}
+          </Link>
+          .
+        </>
+      ) : null}
+    </>
+  );
+}
 
 /** "Best for" copy for the package table, keyed by package (and "bulk"). */
 export type PricingBestFor = Record<VideoPackageId | "bulk", string>;
@@ -67,7 +95,7 @@ function SectionBlock({ section }: { section: ServiceSection }) {
           <ol className="list-decimal space-y-4 pl-6 text-lg leading-8 text-gray-700 marker:font-bold marker:text-[#FF3333]">
             {section.items.map((item) => (
               <li key={item.lead}>
-                <strong>{item.lead}</strong> {item.text}
+                <ItemText item={item} />
               </li>
             ))}
           </ol>
@@ -80,7 +108,7 @@ function SectionBlock({ section }: { section: ServiceSection }) {
               >
                 <span className="mt-1 text-[#FF3333]">•</span>
                 <span>
-                  <strong>{item.lead}</strong> {item.text}
+                  <ItemText item={item} />
                 </span>
               </li>
             ))}

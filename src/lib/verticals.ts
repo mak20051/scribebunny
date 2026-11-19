@@ -694,7 +694,8 @@ export const verticals: Vertical[] = [
           },
           {
             lead: "Clinical wording.",
-            text: "The practice has the final say on anything clinical. We do not write medical claims for you, and a video should supplement the conversation with your clinician, not replace it. We do not give legal or medical advice. Questions about the process? Use our contact page.",
+            text: "The practice has the final say on anything clinical. We do not write medical claims for you, and a video should supplement the conversation with your clinician, not replace it. We do not give legal or medical advice. Questions about the process?",
+            link: { label: "Contact us", href: "/contact" },
           },
         ],
       },

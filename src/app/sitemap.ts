@@ -10,19 +10,19 @@ import { verticals } from "@/lib/verticals";
 const corePages: MetadataRoute.Sitemap = [
   {
     url: SITE_URL,
-    lastModified: "2026-11-17",
+    lastModified: "2026-11-19",
     changeFrequency: "weekly",
     priority: 1,
   },
   {
     url: `${SITE_URL}/work`,
-    lastModified: "2026-11-17",
+    lastModified: "2026-11-19",
     changeFrequency: "weekly",
     priority: 0.8,
   },
   {
     url: `${SITE_URL}/free-concepts`,
-    lastModified: "2026-11-17",
+    lastModified: "2026-11-19",
     changeFrequency: "monthly",
     priority: 0.8,
   },

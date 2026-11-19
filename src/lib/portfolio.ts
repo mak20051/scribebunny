@@ -315,11 +315,4 @@ export const fullPortfolio: Video[] = [
     summary: "Animated video for an orthopedic practice, made by Scribebunny.",
     uploadDate: "2023-07-04",
   },
-  {
-    id: "S5vdBu8gJUg",
-    title: "Health clinic video",
-    category: "Medical",
-    summary: "Animated video for a health clinic, made by Scribebunny.",
-    uploadDate: "2026-10-09",
-  },
 ];
