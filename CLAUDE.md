@@ -17,6 +17,27 @@ page for page at the time of the rebuild.
 - `npm run dev`: local dev server
 - `npm run build`: production build
 - `npm run lint`: ESLint
+- `npm run typecheck`: route types (`next typegen`) and `tsc --noEmit`
+- `npm test`: Vitest (`src/**/*.test.ts`, Node, in-memory store)
+- `npm run check`: typecheck, lint and tests; GitHub Actions runs it on every
+  push to `main` and every pull request (`.github/workflows/check.yml`)
+
+## Code principles
+1. Constraints first: follow the existing structure, types and lint rules.
+   Read how the app already solves a similar problem and do it the same way.
+2. Prove it works: every change to business logic (prices, channels, follow-up
+   timing, access, growth numbers) ships with tests next to the file
+   (`foo.ts` -> `foo.test.ts`). Run `npm run check` and show the output before
+   pushing. When a bug can be prevented by a type, a lint rule or a better API,
+   do that instead of a comment.
+3. No slop: no explanatory comments, no timers or temporary workarounds that
+   bypass the architecture. Keep code clean and consistent.
+4. Bugs found along the way get their own branch and pull request, with the fix
+   and a test that fails without it, apart from the work in progress.
+
+Tests never touch real services: they run without `BLOB_READ_WRITE_TOKEN`
+(the store is in memory; `growth.test.ts` asserts this), without SMTP (emails
+are logged) and outside production (the CRM is skipped).
 
 ## Key files
 - `src/app/*/page.tsx`: pages (home, work, contact, thank-you, three service pages)
