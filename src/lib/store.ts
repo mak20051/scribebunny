@@ -112,7 +112,9 @@ export async function updateJson<T>(
 /** Paths of every document under a folder, e.g. listPaths("orders/"). */
 export async function listPaths(folder: string): Promise<string[]> {
   if (!storeConfigured) {
-    return [...memory.keys()].filter((key) => key.startsWith(folder));
+    return [...memory.keys(), ...memoryFiles.keys()].filter((key) =>
+      key.startsWith(folder),
+    );
   }
   const paths: string[] = [];
   let cursor: string | undefined;

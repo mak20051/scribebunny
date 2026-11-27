@@ -253,18 +253,24 @@ export default async function PortalOrderPage({ params, searchParams }: Props) {
           </p>
           <div className="flex flex-wrap items-center gap-4">
             {isTeam ? (
-              <Link
-                href={clientPath(order)}
-                className="text-base font-bold text-[#FF3333] underline"
-              >
-                See the client view
-              </Link>
+              <>
+                <Link
+                  href={clientPath(order)}
+                  className="text-base font-bold text-[#FF3333] underline"
+                >
+                  See the client view
+                </Link>
+                <form action={resetDemoAction}>
+                  <Hidden orderRef={ref} k={k} />
+                  <SubmitButton
+                    pendingLabel="Resetting…"
+                    className="btn-secondary"
+                  >
+                    Reset demo
+                  </SubmitButton>
+                </form>
+              </>
             ) : null}
-            <form action={resetDemoAction}>
-              <SubmitButton pendingLabel="Resetting…" className="btn-secondary">
-                Reset demo
-              </SubmitButton>
-            </form>
           </div>
         </div>
       ) : null}
