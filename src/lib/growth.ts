@@ -14,10 +14,10 @@ import {
  *   enquiries ─┬─ form leads (contact, quote, agency)      leads/
  *              └─ free concept requests                     concepts/
  *   concepts sent ──────────────────────────────────────────▶ concept status "sent"
- *   orders, revenue ────────────────────────────────────────▶ orders/ once paid (Stripe
- *                                                              or marked paid), by payment date
+ *   orders, revenue ────────────────────────────────────────▶ orders/ once paid (marked
+ *                                                              paid, or old Stripe checkouts), by payment date
  *   concept → order ── a concept request whose email later placed an order
- *   by channel ── each enquiry's own source; an order's from its checkout, else
+ *   by channel ── each enquiry's own source; an order's own (old checkouts), else
  *                 from the first enquiry with the same email (quotes)
  *
  * The board is the owner's only: it opens with the owner's own key (lib/access.ts).
@@ -156,7 +156,7 @@ export async function growthReport(range: RangeKey) {
     }, {}),
   ).sort((a, b) => b.revenueCents - a.revenueCents);
 
-  // An order's source: its checkout, else the first enquiry with that email.
+  // An order's source: its own (old checkouts), else the first enquiry with that email.
   const sourceByEmail = new Map<string, LeadSource>();
   [
     ...leads.map((lead) => ({

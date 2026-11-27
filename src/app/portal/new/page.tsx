@@ -43,10 +43,9 @@ export default async function NewPortalPage({ searchParams }: Props) {
         New client portal
       </h1>
       <p className="mt-2 max-w-2xl text-lg text-gray-700">
-        For custom deals: set your own price and number of videos. The client
-        gets their own private link, pays with Stripe in the portal (invoiced by{" "}
-        {PARENT_COMPANY}) unless you mark it already paid, and gets every update
-        by email like any other order.
+        For every deal: set the price and number of videos. The client gets
+        their own private link and every update by email. Send them an invoice
+        from {PARENT_COMPANY}, then mark the portal paid once it is.
       </p>
 
       <form
@@ -171,14 +170,14 @@ export default async function NewPortalPage({ searchParams }: Props) {
             <input
               type="radio"
               name="payment"
-              value="stripe"
+              value="invoice"
               defaultChecked
               className="mt-1 h-5 w-5 accent-[#FF3333]"
             />
             <span>
-              <strong>Client pays in the portal.</strong> Their portal shows a
-              Pay button for this price; Stripe takes the card and{" "}
-              {PARENT_COMPANY} sends the invoice.
+              <strong>Awaiting payment.</strong> You send the invoice from{" "}
+              {PARENT_COMPANY}; mark it paid in the portal once it&apos;s paid.
+              The client gets payment reminders on day 2 and day 5.
             </span>
           </label>
           <label className="flex items-start gap-3 text-base text-gray-800">
@@ -189,8 +188,8 @@ export default async function NewPortalPage({ searchParams }: Props) {
               className="mt-1 h-5 w-5 accent-[#FF3333]"
             />
             <span>
-              <strong>Already paid</strong> another way (bank transfer, your own
-              invoice).
+              <strong>Already paid.</strong> The client goes straight to sending
+              their brief.
             </span>
           </label>
         </fieldset>
@@ -203,8 +202,8 @@ export default async function NewPortalPage({ searchParams }: Props) {
             className="mt-1 h-5 w-5 accent-[#FF3333]"
           />
           <span>
-            Email the client their portal link now, with the project details{" "}
-            (and the Pay button if they still need to pay).
+            Email the client their portal link now, with the project details
+            (and a note that the invoice follows if they still need to pay).
           </span>
         </label>
 

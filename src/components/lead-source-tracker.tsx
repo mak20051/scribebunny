@@ -28,7 +28,7 @@ type Stored = { first?: BrowserTouch; last?: BrowserTouch };
 const KEY = "sb_source";
 const MAX_AGE = 90 * 86_400_000;
 const UTM = ["source", "medium", "campaign", "term", "content"] as const;
-// Our own sites and checkout coming back are not a source.
+// Our own sites, and payment pages linking back, are not a source.
 const NOT_A_SOURCE =
   /(^|\.)(scribebunny\.com|stripe\.com|vercel\.app|vercel\.com)$/;
 

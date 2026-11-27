@@ -1,6 +1,6 @@
 /**
  * Video packages: the single source of truth for prices and what each
- * package includes. Pages, FAQs, schema, llms.txt, checkout and order emails
+ * package includes. Pages, FAQs, schema, llms.txt and emails
  * all read from here, so never retype a price or inclusion in page copy.
  *
  *   1 video ─────▶ $299, delivered in 24 to 48 hours
@@ -120,7 +120,7 @@ export function savingsCents(videoPackage: VideoPackage) {
   return videoPackage.videos * singleVideoCents - videoPackage.priceCents;
 }
 
-/** One line for checkout and receipts: length, delivery and revisions. */
+/** One line per package: length, delivery and revisions. */
 export function packageSummary(videoPackage: VideoPackage) {
   const length =
     videoPackage.videos > 1

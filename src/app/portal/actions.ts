@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
 import {
   filesFolder,
   MAX_FILES_PER_MESSAGE,
@@ -10,8 +9,6 @@ import {
 import { fileInfo, portalPath } from "@/lib/store";
 import { saveReview, toggleLaunchStep } from "@/lib/launch";
 import { stopByTeam } from "@/lib/prospect-follow-ups";
-import { createPortalCheckout } from "@/lib/payments";
-import { SITE_URL } from "@/lib/site";
 import { redirect } from "next/navigation";
 import {
   memberForKey,
@@ -130,7 +127,9 @@ export async function setOrderStatusAction(formData: FormData) {
 }
 
 /** Demo project only: back to the sample data. */
-export async function resetDemoAction() {
+export async function resetDemoAction(formData: FormData) {
+  const { ref } = await authorize(formData, true);
+  if (ref !== DEMO_REF) throw new Error("Only the demo can be reset.");
   await resetDemo();
   revalidatePath(`/portal/${DEMO_REF}`);
 }
@@ -199,19 +198,10 @@ export async function submitReviewAction(formData: FormData) {
   revalidatePath(`/portal/${ref}`);
 }
 
-/** Client: pay a custom-price project with Stripe. */
-export async function payPortalAction(formData: FormData) {
-  const { ref, role } = await authorize(formData);
-  const opened = await openOrder(ref, field(formData, "k", 64));
-  if (role !== "client" || !opened) throw new Error("Only the client pays.");
-  const origin = (await headers()).get("origin") ?? SITE_URL;
-  redirect(await createPortalCheckout(opened.order, origin));
-}
-
-/** Studio: the client paid another way (bank transfer, own invoice). */
+/** Studio: the client paid the invoice. */
 export async function markPaidAction(formData: FormData) {
   const { ref } = await authorize(formData, true);
-  await markPortalPaid(ref, { method: "outside" });
+  await markPortalPaid(ref);
   revalidatePath(`/portal/${ref}`);
 }
 

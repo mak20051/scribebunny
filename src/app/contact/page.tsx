@@ -38,7 +38,7 @@ const callExpectations = [
     {
       question: "Can I order a video without a call?",
       answer:
-        "Yes. Pick a package in the pricing section and pay online. You'll get your private project portal straight away to send us your brief.",
+        "Yes. Start with free concepts or just tell us what you need. Once you pick a package, we send an invoice and open your private project portal, where you send us your brief.",
     },
     {
       question: "How quickly will you reply?",
@@ -55,7 +55,7 @@ const callExpectations = [
     {
       question: "What happens after the call?",
       answer:
-        "If it's a good fit, we recommend the right package, or a custom quote for larger projects, and you can order online whenever you're ready.",
+        "If it's a good fit, we recommend the right package, or a custom quote for larger projects, and we send you an invoice when you're ready to start.",
     },
   ];
 export const metadata: Metadata = pageMetadata({

@@ -20,10 +20,10 @@ import {
   type StopLink,
 } from "@/lib/email-layout";
 import { findVideoPackage, formatUsd, VIDEO_SPEC } from "@/lib/packages";
-import type { Order } from "@/lib/payments";
 import { keyMatches, sign } from "@/lib/signing";
 import { PARENT_COMPANY, SITE_URL } from "@/lib/site";
 import {
+  claimJson,
   deleteFiles,
   listPaths,
   readJson,
@@ -106,11 +106,11 @@ export type PortalOrder = {
   demo?: boolean;
   /** Created by the team from the dashboard, with a custom price. */
   manual?: boolean;
-  /** Where the buyer came from (package checkouts from 2026-11-16 on). */
+  /** Where the buyer came from (package checkouts, 2026-11-16 until checkout was removed). */
   source?: LeadSource;
   /**
-   * Custom-price portals only: "awaiting" until the client pays with the Pay
-   * button (Stripe) or the team marks it paid. Package orders are paid at checkout.
+   * Custom-price portals only: "awaiting" until the team marks the invoice paid.
+   * Older orders were paid by Stripe checkout ("stripe", or no payment at all).
    */
   payment?: {
     status: "awaiting" | "paid";
@@ -288,44 +288,6 @@ export async function listPortalOrders() {
 }
 
 /** Create the portal for a paid order. Safe to call again: the first call wins. */
-export async function openPortal(order: Order): Promise<PortalOrder> {
-  const now = new Date().toISOString();
-  const count = order.videoPackage?.videos ?? 1;
-  const portal: PortalOrder = {
-    ref: order.reference,
-    createdAt: now,
-    status: "active",
-    packageName: order.packageName,
-    amount: order.amount,
-    amountCents: order.amountCents,
-    turnaround: order.videoPackage?.turnaround,
-    client: {
-      name: order.name,
-      email: order.email,
-      phone: order.phone,
-      website: order.website,
-    },
-    topic: order.topic,
-    clientKey: newKey(),
-    invoiceUrl: order.invoiceUrl,
-    dashboardUrl: order.dashboardUrl,
-    source: order.source,
-    videos: newVideos(count, now),
-    messages: order.topic
-      ? [
-          {
-            at: now,
-            from: "client",
-            author: order.name || order.email,
-            text: `From checkout, what the video should explain: ${order.topic}`,
-          },
-        ]
-      : [],
-  };
-  await writeJson(orderPath(portal.ref), portal, { onlyIfNew: true });
-  return (await getPortalOrder(portal.ref)) ?? portal;
-}
-
 function newVideos(count: number, now: string): PortalVideo[] {
   return Array.from({ length: count }, (_, index) => ({
     number: index + 1,
@@ -339,7 +301,7 @@ function newVideos(count: number, now: string): PortalVideo[] {
 export const isPaid = (order: PortalOrder) =>
   order.payment?.status !== "awaiting";
 
-/** When the money came in: checkout time for packages, payment time for custom portals. */
+/** When the money came in: checkout time for old package orders, payment time for custom portals. */
 export const paidDate = (order: PortalOrder) =>
   order.payment?.paidAt ?? order.createdAt;
 
@@ -358,7 +320,7 @@ export type NewPortal = {
   videos: number;
   amountCents: number;
   turnaround?: string;
-  /** Already paid outside Stripe; otherwise the client pays in the portal. */
+  /** Already paid; otherwise the team marks it paid once the invoice is. */
   paid: boolean;
 };
 
@@ -398,7 +360,7 @@ export async function createManualPortal(input: NewPortal) {
   throw new Error("Could not create a project reference. Please try again.");
 }
 
-/** Welcome a client to a portal the team created: what they get, and how to pay. */
+/** Welcome a client to a portal the team created: what they get, and what's next. */
 export async function sendPortalWelcome(order: PortalOrder) {
   const awaiting = order.payment?.status === "awaiting";
   const videos = order.videos.length;
@@ -415,16 +377,13 @@ export async function sendPortalWelcome(order: PortalOrder) {
       ],
     )}<p>${
       awaiting
-        ? `To get started, pay securely in your portal. Your invoice comes from ${PARENT_COMPANY}. Then send us your brief and we'll start sketching.`
+        ? `Your invoice comes from ${PARENT_COMPANY} by email. Once it's paid, send us your brief in your portal and we'll start sketching.`
         : "Open your portal and send us your brief: your website, what the video should explain, who it's for, and any brand files."
     }</p>`,
     preheader: awaiting
-      ? "Pay securely in your portal and we'll start sketching."
+      ? "Your invoice is on its way. Then we start sketching."
       : "Send us your brief and we'll start sketching.",
-    button: {
-      label: awaiting ? "Pay and get started" : "Open your project portal",
-      href: clientLink(order),
-    },
+    button: { label: "Open your project portal", href: clientLink(order) },
   });
 }
 
@@ -432,37 +391,23 @@ export async function sendPortalWelcome(order: PortalOrder) {
  * Mark a custom-price portal paid, once. Returns the order if this call did it
  * (and emails the client), or null if it was already paid.
  */
-export async function markPortalPaid(
-  ref: string,
-  details: {
-    method: "stripe" | "outside";
-    invoiceUrl?: string;
-    dashboardUrl?: string;
-  },
-) {
-  let claimed = false;
-  const order = await updateOrder(ref, (current) => {
-    if (current.payment?.status !== "awaiting") return;
-    claimed = true;
+export async function markPortalPaid(ref: string) {
+  const order = await claimOrder(ref, (current) => {
+    if (current.payment?.status !== "awaiting") return false;
     current.payment = {
       status: "paid",
-      method: details.method,
+      method: "outside",
       paidAt: new Date().toISOString(),
     };
-    if (details.invoiceUrl) current.invoiceUrl = details.invoiceUrl;
-    if (details.dashboardUrl) current.dashboardUrl = details.dashboardUrl;
+    return true;
   });
-  if (!claimed) return null;
+  if (!order) return null;
   if (!order.demo) {
     await emailClient(order, {
       subject: `Payment received for ${order.ref}`,
       eyebrow: `Project ${order.ref} · ${order.amount}`,
       heading: "Payment received. Let's get drawing!",
-      bodyHtml: `<p>Thank you! We've received ${escapeHtml(order.amount)} for ${escapeHtml(order.packageName)}.${
-        details.method === "stripe"
-          ? ` Your receipt and invoice from ${PARENT_COMPANY} arrive separately from Stripe.`
-          : ""
-      }</p><p>Next, send us your brief in your portal: your website, what the video should explain, who it's for, and any brand files.</p>`,
+      bodyHtml: `<p>Thank you! We've received ${escapeHtml(order.amount)} for ${escapeHtml(order.packageName)}.</p><p>Next, send us your brief in your portal: your website, what the video should explain, who it's for, and any brand files.</p>`,
       preheader: "Send us your brief and we'll start sketching.",
     });
   }
@@ -474,6 +419,12 @@ export const updateOrder = (
   ref: string,
   change: (order: PortalOrder) => void,
 ) => updateJson<PortalOrder>(orderPath(ref), change);
+
+/** Change an order only when `claim` returns true; the order if this call changed it, else null. */
+export const claimOrder = (
+  ref: string,
+  claim: (order: PortalOrder) => boolean,
+) => claimJson<PortalOrder>(orderPath(ref), claim);
 
 /** A new client link for an order (the old one stops working), emailed to the client. */
 export async function replaceClientKey(ref: string) {
@@ -722,8 +673,12 @@ export async function emailClient(
       stopLink: content.stop,
     }),
     text: `Hi ${order.client.name.split(" ")[0] || "there"},\n\n${content.heading}\n\n${button.label}: ${link}\n\nThe Scribebunny studio${
-      content.stop ? `\n\n${content.stop.reason} Stop these reminders: ${content.stop.href}` : ""
+      content.stop
+        ? `\n\n${content.stop.reason} Stop these reminders: ${content.stop.href}`
+        : ""
     }`,
-    headers: content.stop ? unsubscribeHeaders(content.stop.oneClick) : undefined,
+    headers: content.stop
+      ? unsubscribeHeaders(content.stop.oneClick)
+      : undefined,
   });
 }

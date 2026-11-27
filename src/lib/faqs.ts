@@ -48,12 +48,12 @@ export const turnaroundFaq: Faq = {
 
 export const paymentFaq: Faq = {
   question: "How do I pay, and who issues the invoice?",
-  answer: `Pick a package in the pricing section and pay online through secure Stripe checkout. Your receipt and invoice come from ${PARENT_COMPANY}, the parent company of Scribebunny.`,
+  answer: `Start with free concepts or a call. Once you pick a package or approve a custom quote, we send you an invoice from ${PARENT_COMPANY}, the parent company of Scribebunny, and start as soon as it's paid.`,
 };
 
 export const companyFaq: Faq = {
   question: `How is Scribebunny related to ${PARENT_COMPANY}?`,
-  answer: `Scribebunny is a brand of ${PARENT_COMPANY}, based at ${ADDRESS.street}, ${ADDRESS.city}, ${ADDRESS.region} ${ADDRESS.postalCode}. ${PARENT_COMPANY} handles our billing, so you'll see ${PARENT_COMPANY} on your Stripe checkout, receipt, and invoice. Your video is still made by the Scribebunny studio.`,
+  answer: `Scribebunny is a brand of ${PARENT_COMPANY}, based at ${ADDRESS.street}, ${ADDRESS.city}, ${ADDRESS.region} ${ADDRESS.postalCode}. ${PARENT_COMPANY} handles our billing, so you'll see ${PARENT_COMPANY} on your invoice and receipt. Your video is still made by the Scribebunny studio.`,
 };
 
 export const afterOrderFaq: Faq = {

@@ -6,7 +6,6 @@ test.each([
   ["/portal/SB-1234ABCD", true],
   ["/portal/growth", true],
   ["/concepts/C-1234ABCD", true],
-  ["/order-confirmed", true],
   ["/stop-reminders", true],
   ["/api/leads", true],
   ["/api", true],

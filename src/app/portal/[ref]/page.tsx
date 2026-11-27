@@ -9,7 +9,6 @@ import {
 import Link from "next/link";
 import {
   markPaidAction,
-  payPortalAction,
   replaceClientLinkAction,
   resetDemoAction,
   setOrderStatusAction,
@@ -50,7 +49,7 @@ export const metadata: Metadata = {
 
 type Props = {
   params: Promise<{ ref: string }>;
-  searchParams: Promise<{ k?: string; created?: string; paid?: string }>;
+  searchParams: Promise<{ k?: string; created?: string }>;
 };
 
 const STATUS_STYLE: Record<PortalVideo["status"], string> = {
@@ -130,7 +129,7 @@ function Notice({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Custom-price portals before payment: the client's Pay button, or the team's view of it. */
+/** Custom-price portals before payment: what the client owes, and the team's Mark as paid. */
 function PaymentCard({
   order,
   isTeam,
@@ -150,18 +149,17 @@ function PaymentCard({
       </h2>
       <p className="mt-2 max-w-2xl text-lg text-gray-800">
         {isTeam
-          ? "The client pays with the Pay button in their portal. If they paid another way, mark it paid here; they get a confirmation email either way."
-          : `${order.packageName}: ${videos} ${videos === 1 ? "video" : "videos"} for ${order.amount}. Pay securely with Stripe, and your invoice comes from ${PARENT_COMPANY}.`}
+          ? `Send the client an invoice from ${PARENT_COMPANY}. Once it's paid, mark it paid here and they get a confirmation email.`
+          : `${order.packageName}: ${videos} ${videos === 1 ? "video" : "videos"} for ${order.amount}. Your invoice comes from ${PARENT_COMPANY} by email. Once it's paid, we'll start sketching.`}
       </p>
-      <form action={isTeam ? markPaidAction : payPortalAction} className="mt-5">
-        <Hidden orderRef={orderRef} k={k} />
-        <SubmitButton
-          pendingLabel={isTeam ? "Saving…" : "Opening Stripe…"}
-          className={`${isTeam ? "btn-secondary" : "btn-primary"} inline-flex w-full items-center justify-center gap-2 sm:w-auto`}
-        >
-          {isTeam ? "Mark as paid" : `Pay ${order.amount} securely`}
-        </SubmitButton>
-      </form>
+      {isTeam ? (
+        <form action={markPaidAction} className="mt-5">
+          <Hidden orderRef={orderRef} k={k} />
+          <SubmitButton className="btn-secondary inline-flex w-full items-center justify-center gap-2 sm:w-auto">
+            Mark as paid
+          </SubmitButton>
+        </form>
+      ) : null}
       {isTeam && order.manual && !order.demo ? (
         <FollowUpStatus
           title="Payment reminders"
@@ -187,7 +185,7 @@ function Hidden({ orderRef, k }: { orderRef: string; k: string }) {
 
 export default async function PortalOrderPage({ params, searchParams }: Props) {
   const { ref } = await params;
-  const { k = "", created, paid } = await searchParams;
+  const { k = "", created } = await searchParams;
   const opened = await openOrder(ref, k);
 
   if (!opened) {
@@ -236,12 +234,6 @@ export default async function PortalOrderPage({ params, searchParams }: Props) {
             : "Copy the client's private link below and send it to them."}
         </Notice>
       ) : null}
-      {!isTeam && paid && isPaid(order) ? (
-        <Notice>
-          <strong>Payment received. Thank you!</strong> Your receipt and invoice
-          arrive by email from Stripe. Next, send us your brief below.
-        </Notice>
-      ) : null}
       {isPaid(order) ? null : (
         <PaymentCard order={order} isTeam={isTeam} orderRef={ref} k={k} />
       )}
@@ -253,18 +245,24 @@ export default async function PortalOrderPage({ params, searchParams }: Props) {
           </p>
           <div className="flex flex-wrap items-center gap-4">
             {isTeam ? (
-              <Link
-                href={clientPath(order)}
-                className="text-base font-bold text-[#FF3333] underline"
-              >
-                See the client view
-              </Link>
+              <>
+                <Link
+                  href={clientPath(order)}
+                  className="text-base font-bold text-[#FF3333] underline"
+                >
+                  See the client view
+                </Link>
+                <form action={resetDemoAction}>
+                  <Hidden orderRef={ref} k={k} />
+                  <SubmitButton
+                    pendingLabel="Resetting…"
+                    className="btn-secondary"
+                  >
+                    Reset demo
+                  </SubmitButton>
+                </form>
+              </>
             ) : null}
-            <form action={resetDemoAction}>
-              <SubmitButton pendingLabel="Resetting…" className="btn-secondary">
-                Reset demo
-              </SubmitButton>
-            </form>
           </div>
         </div>
       ) : null}
@@ -349,9 +347,9 @@ export default async function PortalOrderPage({ params, searchParams }: Props) {
                     <dt className="inline font-bold">Paid: </dt>
                     <dd className="inline">
                       <LocalTime iso={order.payment.paidAt} />
-                      {order.payment.method === "outside"
-                        ? " (outside Stripe)"
-                        : " (Stripe)"}
+                      {order.payment.method === "stripe"
+                        ? " (Stripe)"
+                        : " (marked by the team)"}
                     </dd>
                   </div>
                 ) : null}

@@ -1,11 +1,5 @@
 import { describe, expect, test } from "vitest";
-import {
-  leadSource,
-  sourceFields,
-  sourceFromMetadata,
-  sourceMetadata,
-  type Channel,
-} from "@/lib/lead-source";
+import { leadSource, sourceFields, type Channel } from "@/lib/lead-source";
 
 const request = (headers: Record<string, string> = {}) =>
   new Request("https://scribebunny.com/api/leads", {
@@ -293,55 +287,5 @@ describe("alert rows", () => {
 
   test("nothing recorded gives no rows", () => {
     expect(sourceFields(undefined)).toEqual([]);
-  });
-});
-
-describe("Stripe metadata", () => {
-  test("round-trips a full source", () => {
-    const source = leadSource(
-      request({
-        "x-vercel-ip-country": "GB",
-        "user-agent": "Mozilla/5.0 (Windows NT 10.0)",
-      }),
-      {
-        first: {
-          at: "2026-11-01T10:00:00.000Z",
-          landing: "/",
-          referrer: "www.bing.com",
-        },
-        ...visit({
-          utm: { source: "newsletter", medium: "email", campaign: "nov" },
-        }),
-        page: "/",
-      },
-    );
-    expect(sourceFromMetadata(sourceMetadata(source))).toEqual(
-      JSON.parse(JSON.stringify(source)),
-    );
-  });
-
-  test("keeps every value within Stripe's limits", () => {
-    const metadata = sourceMetadata(
-      leadSource(
-        request(),
-        visit({ utm: { source: "s".repeat(900), campaign: "c".repeat(900) } }),
-      ),
-    );
-    expect(Object.keys(metadata).length).toBeLessThanOrEqual(50);
-    for (const [key, value] of Object.entries(metadata)) {
-      expect(key.length).toBeLessThanOrEqual(40);
-      expect(value.length).toBeLessThanOrEqual(500);
-    }
-  });
-
-  test("orders without source metadata have no source", () => {
-    expect(sourceFromMetadata({ package: "single" })).toBeUndefined();
-    expect(sourceFromMetadata(null)).toBeUndefined();
-  });
-
-  test("an unknown channel from metadata reads as Unknown", () => {
-    expect(sourceFromMetadata({ src_channel: "Carrier pigeon" })?.channel).toBe(
-      "Unknown",
-    );
   });
 });

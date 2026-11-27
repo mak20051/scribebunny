@@ -4,14 +4,21 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { isPrivatePath } from "@/lib/private-paths";
 import { CALENDLY_URL } from "@/lib/site";
-import { videoPackages } from "@/lib/packages";
 
 const GA_ID = "G-MX1GLDERW4";
 const LEAD_FORMS = ["contact", "agency", "free_concepts", "quote"];
 // Campaign tags GA4 needs for attribution; every other param is dropped.
 const KEEP_PARAMS = [
-  "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
-  "utm_id", "gclid", "gbraid", "wbraid", "msclkid",
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_term",
+  "utm_content",
+  "utm_id",
+  "gclid",
+  "gbraid",
+  "wbraid",
+  "msclkid",
 ];
 
 type GtagWindow = Window & {
@@ -57,47 +64,16 @@ function pageLocation(pathname: string) {
   return window.location.origin + pathname + (query ? `?${query}` : "");
 }
 
-/** The package behind a checkout button, read from the DOM (no component edits). */
-function checkoutPackage(button: HTMLElement) {
-  const card = button.closest("article.pricing-card");
-  const cardName = card?.querySelector("h3")?.textContent?.trim();
-  if (cardName) return videoPackages.find((item) => item.name === cardName);
-  if (/^order a video/i.test(button.textContent?.trim() ?? "")) {
-    return videoPackages.find((item) => item.id === "single");
-  }
-  return undefined;
-}
-
 function onDocumentClick(event: MouseEvent) {
   if (onPrivatePage() || !(event.target instanceof Element)) return;
 
-  const link = event.target.closest("a[href]");
-  if (link) {
-    const href = link.getAttribute("href") ?? "";
-    if (href.startsWith(CALENDLY_URL)) {
-      gtag("event", "book_call_click");
-    } else if (/^tel:/i.test(href)) {
-      gtag("event", "phone_click");
-    } else if (/^mailto:/i.test(href)) {
-      gtag("event", "email_click");
-    }
-    return;
-  }
-
-  // Checkout buttons are <button type="button"> inside a pricing card, or the
-  // "Order a Video" hero button. No stable attribute exists without editing
-  // checkout-button.tsx, so match on that structure and label.
-  const button = event.target.closest<HTMLElement>("button[type='button']");
-  if (!button) return;
-  const label = button.textContent?.trim() ?? "";
-  const inPricingCard = !!button.closest("article.pricing-card");
-  if (inPricingCard || /^order a video/i.test(label)) {
-    const item = checkoutPackage(button);
-    gtag("event", "begin_checkout", {
-      package_name: item?.name,
-      currency: "USD",
-      value: item ? item.priceCents / 100 : undefined,
-    });
+  const href = event.target.closest("a[href]")?.getAttribute("href") ?? "";
+  if (href.startsWith(CALENDLY_URL)) {
+    gtag("event", "book_call_click");
+  } else if (/^tel:/i.test(href)) {
+    gtag("event", "phone_click");
+  } else if (/^mailto:/i.test(href)) {
+    gtag("event", "email_click");
   }
 }
 
