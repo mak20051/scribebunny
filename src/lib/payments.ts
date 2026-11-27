@@ -277,6 +277,7 @@ export async function describeOrder(sessionId: string) {
 /** Record a paid order once: the team alert, then the customer's confirmation. */
 export async function fulfil(sessionId: string) {
   let order = await loadOrder(sessionId);
+  if (!order.videoPackage && !order.portalRef) return order;
   if (order.portalRef) {
     await settlePortalPayment(sessionId, order);
     return order;

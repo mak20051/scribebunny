@@ -464,7 +464,9 @@ export async function markPortalPaid(
           : ""
       }</p><p>Next, send us your brief in your portal: your website, what the video should explain, who it's for, and any brand files.</p>`,
       preheader: "Send us your brief and we'll start sketching.",
-    });
+    }).catch((error) =>
+      console.error(`[portal] payment email to ${order.ref} failed:`, error),
+    );
   }
   return order;
 }
