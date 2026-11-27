@@ -1,5 +1,6 @@
 import { newKey, sameKey } from "@/lib/access";
 import {
+  claimConceptRequest,
   firstName,
   getConceptRequest,
   listConceptRequests,
@@ -15,6 +16,7 @@ import {
   VIDEO_SPEC,
 } from "@/lib/packages";
 import {
+  claimOrder,
   clientLink,
   emailClient,
   getPortalOrder,
@@ -74,9 +76,9 @@ const stopOneClick = (id: string, key: string) =>
 const isOpenQuote = (order: PortalOrder) =>
   Boolean(
     order.manual &&
-      !order.demo &&
-      order.payment?.status === "awaiting" &&
-      order.client.email,
+    !order.demo &&
+    order.payment?.status === "awaiting" &&
+    order.client.email,
   );
 
 function dueStep(
@@ -119,6 +121,27 @@ async function updateMarks(id: string, change: MarksChange) {
   }
 }
 
+/** Change a record's marks only when `claim` returns new ones; the saved marks, else null. */
+async function claimMarks(
+  id: string,
+  claim: (marks?: ProspectFollowUps) => ProspectFollowUps | null,
+) {
+  if (id.startsWith("C-")) {
+    const request = await claimConceptRequest(id, (current) => {
+      const next = claim(current.followUps);
+      if (next) current.followUps = next;
+      return Boolean(next);
+    });
+    return request?.followUps ?? null;
+  }
+  const order = await claimOrder(id, (current) => {
+    const next = claim(current.payReminders);
+    if (next) current.payReminders = next;
+    return Boolean(next);
+  });
+  return order?.payReminders ?? null;
+}
+
 /**
  * Claim a step on the record, send it, and release the claim if sending fails:
  * running twice never sends twice, and a failure is tried again tomorrow. If
@@ -131,19 +154,20 @@ async function sendStep(
   send: (stopKey: string) => Promise<void>,
 ) {
   const at = new Date(now).toISOString();
-  let stopKey = "";
-  await updateMarks(id, (marks) => {
-    if (marks?.stopped || marks?.[step.key]) return marks;
-    stopKey = marks?.stopKey ?? newKey();
-    const next: ProspectFollowUps = { ...marks, stopKey };
+  const claimed = await claimMarks(id, (marks) => {
+    if (marks?.stopped || marks?.[step.key]) return null;
+    const next: ProspectFollowUps = {
+      ...marks,
+      stopKey: marks?.stopKey ?? newKey(),
+    };
     for (const item of STEPS) {
       if (item.days <= step.days) next[item.key] ??= at;
     }
     return next;
   });
-  if (!stopKey) return false;
+  if (!claimed?.stopKey) return false;
   try {
-    await send(stopKey);
+    await send(claimed.stopKey);
     return true;
   } catch (error) {
     console.error(`[prospect follow-ups] ${id} ${step.key} failed:`, error);
@@ -242,8 +266,7 @@ export async function orderFor(email: string) {
   return (
     orders.find(
       (order) =>
-        !order.demo &&
-        order.client.email.toLowerCase() === email.toLowerCase(),
+        !order.demo && order.client.email.toLowerCase() === email.toLowerCase(),
     )?.ref ?? null
   );
 }

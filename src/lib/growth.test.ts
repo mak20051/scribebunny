@@ -1,123 +1,70 @@
 import { beforeAll, describe, expect, test } from "vitest";
-import type { ConceptRequest } from "@/lib/concepts";
 import { growthReport } from "@/lib/growth";
-import type { LeadSource } from "@/lib/lead-source";
-import type { StoredLead } from "@/lib/leads";
-import type { PortalOrder } from "@/lib/portal";
-import { storeConfigured, writeJson } from "@/lib/store";
+import {
+  conceptRequest,
+  leadSource as source,
+  portalOrder,
+  seed,
+  storedLead as lead,
+} from "@/test/fixtures";
 
-const source = (
-  channel: LeadSource["channel"],
-  country?: string,
-): LeadSource => ({
-  channel,
-  source: "test",
-  country,
+const paid = (cents: number) => ({
+  amountCents: cents,
+  amount: `$${cents / 100}`,
 });
 
-const lead = (
-  id: string,
-  email: string,
-  createdAt: string,
-  leadSource?: LeadSource,
-): StoredLead => ({
-  id,
-  createdAt,
-  type: "strategy",
-  name: id,
-  email,
-  source: leadSource,
-});
-
-const conceptRequest = (
-  id: string,
-  email: string,
-  createdAt: string,
-  leadSource?: LeadSource,
-): ConceptRequest => ({
-  id,
-  createdAt,
-  status: "failed",
-  lead: { name: id, email, phone: "555" },
-  concepts: [],
-  source: leadSource,
-});
-
-const order = (
-  ref: string,
-  email: string,
-  amountCents: number,
-  extra: Partial<PortalOrder> = {},
-): PortalOrder => ({
-  ref,
-  createdAt: "2026-11-20T10:00:00.000Z",
-  status: "active",
-  packageName: "Single video",
-  amount: `$${amountCents / 100}`,
-  amountCents,
-  client: { name: ref, email },
-  videos: [],
-  messages: [],
-  ...extra,
-});
-
-beforeAll(async () => {
-  expect(storeConfigured).toBe(false);
-  const leads = [
-    lead(
-      "L-1",
-      "ads@example.com",
-      "2026-11-10T10:00:00.000Z",
-      source("Paid search", "United States"),
-    ),
-    lead(
-      "L-2",
-      "quote@example.com",
-      "2026-11-11T10:00:00.000Z",
-      source("Organic search", "Canada"),
-    ),
-    lead(
-      "L-3",
-      "quote@example.com",
-      "2026-11-12T10:00:00.000Z",
-      source("Email", "Canada"),
-    ),
-    lead("L-4", "old@example.com", "2026-11-01T10:00:00.000Z"),
-  ];
-  const concepts = [
-    conceptRequest(
-      "C-1",
-      "ai@example.com",
-      "2026-11-13T10:00:00.000Z",
-      source("AI assistant", "United States"),
-    ),
-    conceptRequest(
-      "C-2",
-      "ads2@example.com",
-      "2026-11-14T10:00:00.000Z",
-      source("Paid search", "Brazil"),
-    ),
-  ];
-  const orders = [
-    order("SB-PACKAGE", "ads@example.com", 99_900, {
-      source: source("Paid search"),
-    }),
-    order("SB-QUOTE", "Quote@Example.com", 250_000, {
-      manual: true,
-      payment: { status: "paid", paidAt: "2026-11-21T10:00:00.000Z" },
-    }),
-    order("SB-STRANGER", "nobody@example.com", 50_000),
-    order("SB-UNPAID", "ai@example.com", 400_000, {
-      manual: true,
-      payment: { status: "awaiting" },
-    }),
-  ];
-  await Promise.all([
-    ...leads.map((item) => writeJson(`leads/${item.id}.json`, item)),
-    ...concepts.map((item) => writeJson(`concepts/${item.id}.json`, item)),
-    ...orders.map((item) => writeJson(`orders/${item.ref}.json`, item)),
-  ]);
-});
+beforeAll(() =>
+  seed({
+    leads: [
+      lead(
+        "L-1",
+        "ads@example.com",
+        "2026-11-10T10:00:00.000Z",
+        source("Paid search", "United States"),
+      ),
+      lead(
+        "L-2",
+        "quote@example.com",
+        "2026-11-11T10:00:00.000Z",
+        source("Organic search", "Canada"),
+      ),
+      lead(
+        "L-3",
+        "quote@example.com",
+        "2026-11-12T10:00:00.000Z",
+        source("Email", "Canada"),
+      ),
+      lead("L-4", "old@example.com", "2026-11-01T10:00:00.000Z"),
+    ],
+    concepts: [
+      conceptRequest("C-1", "ai@example.com", {
+        createdAt: "2026-11-13T10:00:00.000Z",
+        source: source("AI assistant", "United States"),
+      }),
+      conceptRequest("C-2", "ads2@example.com", {
+        createdAt: "2026-11-14T10:00:00.000Z",
+        source: source("Paid search", "Brazil"),
+      }),
+    ],
+    orders: [
+      portalOrder("SB-PACKAGE", "ads@example.com", {
+        ...paid(99_900),
+        source: source("Paid search"),
+      }),
+      portalOrder("SB-QUOTE", "Quote@Example.com", {
+        ...paid(250_000),
+        manual: true,
+        payment: { status: "paid", paidAt: "2026-11-21T10:00:00.000Z" },
+      }),
+      portalOrder("SB-STRANGER", "nobody@example.com", paid(50_000)),
+      portalOrder("SB-UNPAID", "ai@example.com", {
+        ...paid(400_000),
+        manual: true,
+        payment: { status: "awaiting" },
+      }),
+    ],
+  }),
+);
 
 describe("growth board sources", () => {
   test("enquiries, orders and revenue by channel", async () => {
