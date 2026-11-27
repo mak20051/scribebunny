@@ -36,6 +36,11 @@ page for page at the time of the rebuild.
 4. Bugs found along the way get their own branch and pull request, with the fix
    and a test that fails without it, apart from the work in progress.
 
+Sending something once (payment emails, follow-ups, reminders): claim it with
+`claimJson` (`claimOrder`, `claimConceptRequest`), whose result says whether
+this call made the change. Never set a flag inside an `updateJson` change: a
+retried attempt leaves it set even when another call won.
+
 Tests never touch real services: they run without `BLOB_READ_WRITE_TOKEN`
 (the store is in memory; `growth.test.ts` asserts this), without SMTP (emails
 are logged) and outside production (the CRM is skipped).

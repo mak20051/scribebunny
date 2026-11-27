@@ -79,4 +79,11 @@ describe("client follow-ups after completion", () => {
     expect(second.sent).toEqual(["SB-FAILS001 day7"]);
     expect((await sendFollowUps(NOW + 120_000)).sent).toEqual([]);
   });
+
+  test("two runs at once send each email once", async () => {
+    await seed({ orders: [complete("SB-RACE0001", 8)] });
+    const runs = await Promise.all([sendFollowUps(NOW), sendFollowUps(NOW)]);
+    expect(runs.flatMap((run) => run.sent)).toEqual(["SB-RACE0001 day7"]);
+    expect(sent).toHaveBeenCalledOnce();
+  });
 });

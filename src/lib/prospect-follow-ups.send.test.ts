@@ -105,4 +105,17 @@ describe("prospect follow-ups", () => {
       (await sendProspectFollowUps(NOW + 3.5 * 86_400_000)).sent,
     ).not.toContain("C-DAY2AAAA day5");
   });
+
+  test("two runs at once send each reminder once", async () => {
+    sent.mockClear();
+    await seed({
+      concepts: [conceptsSent("C-RACEAAAA", "race@example.com", 2.2)],
+    });
+    const runs = await Promise.all([
+      sendProspectFollowUps(NOW),
+      sendProspectFollowUps(NOW),
+    ]);
+    expect(runs.flatMap((run) => run.sent)).toEqual(["C-RACEAAAA day2"]);
+    expect(sent).toHaveBeenCalledOnce();
+  });
 });

@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
 import {
+  claimJson,
   listPaths,
   readJson,
   storeConfigured,
@@ -54,4 +55,17 @@ test("updating a missing document fails", async () => {
 test("listPaths lists one folder", async () => {
   await writeJson("leads/L-1.json", {});
   expect(await listPaths("leads/")).toEqual(["leads/L-1.json"]);
+});
+
+test("claimJson: of two claims at once, exactly one wins", async () => {
+  await writeJson("orders/D.json", { paid: false });
+  const claim = () =>
+    claimJson<{ paid: boolean }>("orders/D.json", (value) => {
+      if (value.paid) return false;
+      value.paid = true;
+      return true;
+    });
+  const results = await Promise.all([claim(), claim(), claim()]);
+  expect(results.filter(Boolean)).toHaveLength(1);
+  expect(await claim()).toBeNull();
 });
