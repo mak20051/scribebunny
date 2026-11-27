@@ -176,7 +176,9 @@ LLC, so the Stripe account behind `STRIPE_SECRET_KEY` must be Infinisys LLC's.
 
 ## Environment
 Vercel env vars: `STRIPE_SECRET_KEY`, optional `STRIPE_WEBHOOK_SECRET`
-(endpoint `/api/stripe/webhook`, event `checkout.session.completed`), plus
+(endpoint `/api/stripe/webhook`, events `checkout.session.completed` and
+`checkout.session.async_payment_succeeded`, so delayed bank payments are
+fulfilled when they clear), plus
 SMTP settings: `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`,
 `SMTP_PASS`, `LEAD_FROM_EMAIL`. Lead and order alerts go to `TEAM_EMAILS` in
 `src/lib/site.ts`. Locally, without SMTP, emails are logged and written to

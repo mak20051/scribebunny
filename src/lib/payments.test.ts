@@ -1,4 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
+import { teamMembers } from "@/lib/access";
 import { send, sendCustomerEmail } from "@/lib/email";
 import { fulfil } from "@/lib/payments";
 import { getPortalOrder, listPortalOrders } from "@/lib/portal";
@@ -45,9 +46,24 @@ beforeAll(async () => {
     "cs_quote_payment",
     paidSession("cs_quote_payment", { portal: "SB-QUOTE001" }),
   );
+  sessions.set(
+    "cs_package_1",
+    paidSession("cs_package_1", { package: "single" }),
+  );
+  sessions.set(
+    "cs_package_2",
+    paidSession("cs_package_2", { package: "single" }),
+  );
+  for (const id of ["cs_first_pay", "cs_second_pay"]) {
+    sessions.set(id, paidSession(id, { portal: "SB-TWICE001" }));
+  }
   await seed({
     orders: [
       portalOrder("SB-QUOTE001", "quote@example.com", {
+        manual: true,
+        payment: { status: "awaiting" },
+      }),
+      portalOrder("SB-TWICE001", "twice@example.com", {
         manual: true,
         payment: { status: "awaiting" },
       }),
@@ -63,7 +79,7 @@ beforeEach(() => {
 describe("fulfil", () => {
   test("ignores a paid checkout that is not a Scribebunny package or portal", async () => {
     await fulfil("cs_other_product");
-    expect(await listPortalOrders()).toHaveLength(1);
+    expect(await listPortalOrders()).toHaveLength(2);
     expect(vi.mocked(send)).not.toHaveBeenCalled();
     expect(vi.mocked(sendCustomerEmail)).not.toHaveBeenCalled();
   });
@@ -81,5 +97,45 @@ describe("fulfil", () => {
     expect(
       subjects.every((subject) => subject.startsWith("💰 Payment received")),
     ).toBe(true);
+  });
+});
+
+const subjects = (start: string) =>
+  vi
+    .mocked(send)
+    .mock.calls.map(([message]) => message.subject)
+    .filter((subject) => subject.startsWith(start));
+
+describe("package orders", () => {
+  test("two runs at once tell the team and the client once", async () => {
+    await Promise.all([fulfil("cs_package_1"), fulfil("cs_package_1")]);
+    expect(subjects("💰 New order")).toHaveLength((await teamMembers()).length);
+    expect(vi.mocked(sendCustomerEmail)).toHaveBeenCalledOnce();
+  });
+
+  test("a failed team alert is sent again on the next run", async () => {
+    vi.mocked(send).mockRejectedValueOnce(new Error("SMTP down"));
+    await expect(fulfil("cs_package_2")).rejects.toThrow("SMTP down");
+    expect(vi.mocked(sendCustomerEmail)).not.toHaveBeenCalled();
+    vi.mocked(send).mockClear();
+    await fulfil("cs_package_2");
+    expect(subjects("💰 New order")).toHaveLength((await teamMembers()).length);
+    expect(vi.mocked(sendCustomerEmail)).toHaveBeenCalledOnce();
+  });
+});
+
+describe("a portal paid twice", () => {
+  test("tells the team once to refund the second payment", async () => {
+    await fulfil("cs_first_pay");
+    vi.mocked(send).mockClear();
+    await Promise.all([fulfil("cs_second_pay"), fulfil("cs_second_pay")]);
+    await fulfil("cs_first_pay");
+    expect(subjects("⚠️ Paid twice")).toHaveLength(
+      (await teamMembers()).length,
+    );
+    expect(subjects("💰")).toHaveLength(0);
+    expect((await getPortalOrder("SB-TWICE001"))?.duplicatePayments).toEqual([
+      "https://dashboard.stripe.com/test/payments/pi_cs_second_pay",
+    ]);
   });
 });

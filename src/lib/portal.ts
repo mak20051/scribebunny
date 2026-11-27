@@ -120,6 +120,10 @@ export type PortalOrder = {
   };
   /** Custom-price portals only: reminders while payment is awaited (lib/prospect-follow-ups.ts). */
   payReminders?: ProspectFollowUps;
+  /** Package orders: when the team and client were told (missing on orders before 2026-11-28). */
+  announcedAt?: string;
+  /** Stripe payments (dashboard links) taken after the order was already paid, to refund. */
+  duplicatePayments?: string[];
 };
 
 export type PortalMessage = {
@@ -482,6 +486,18 @@ export const claimOrder = (
   ref: string,
   claim: (order: PortalOrder) => boolean,
 ) => claimJson<PortalOrder>(orderPath(ref), claim);
+
+/** Note a payment for an order that is already paid by another; the order if the payment is new to it, else null. */
+export const claimDuplicatePayment = (ref: string, paymentUrl: string) =>
+  claimOrder(ref, (current) => {
+    if (!isPaid(current) || current.dashboardUrl === paymentUrl) return false;
+    if (current.duplicatePayments?.includes(paymentUrl)) return false;
+    current.duplicatePayments = [
+      ...(current.duplicatePayments ?? []),
+      paymentUrl,
+    ];
+    return true;
+  });
 
 /** A new client link for an order (the old one stops working), emailed to the client. */
 export async function replaceClientKey(ref: string) {
