@@ -18,7 +18,8 @@ page for page at the time of the rebuild.
 - `npm run build`: production build
 - `npm run lint`: ESLint
 - `npm run typecheck`: route types (`next typegen`) and `tsc --noEmit`
-- `npm test`: Vitest (`src/**/*.test.ts`, Node, in-memory store)
+- `npm test`: Vitest (`src/**/*.test.ts`, Node, in-memory store; shared test
+  records in `src/test/fixtures.ts`)
 - `npm run check`: typecheck, lint and tests; GitHub Actions runs it on every
   push to `main` and every pull request (`.github/workflows/check.yml`)
 
@@ -177,5 +178,6 @@ SMTP settings: `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`,
 `EMAIL_PREVIEW_DIR` if set. Never commit `.env*` files.
 
 ## Deploys
-Pushing to `main` deploys to production. Use a branch for changes you want to
-preview first.
+`main` is protected: no direct pushes, for anyone. Push a branch (Vercel builds
+a preview), open a pull request, and merge it once the `check` job passes.
+Merging to `main` deploys to production.
