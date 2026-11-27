@@ -1,5 +1,6 @@
 import { newKey, sameKey } from "@/lib/access";
 import {
+  claimConceptRequest,
   firstName,
   getConceptRequest,
   listConceptRequests,
@@ -15,9 +16,11 @@ import {
   VIDEO_SPEC,
 } from "@/lib/packages";
 import {
+  claimOrder,
   clientLink,
   emailClient,
   getPortalOrder,
+  isPaid,
   listPortalOrders,
   updateOrder,
   type PortalOrder,
@@ -37,7 +40,9 @@ import { CALENDLY_URL, PARENT_COMPANY, SITE_URL } from "@/lib/site";
  * Sent by the daily cron (/api/cron/follow-ups), each at most once and only
  * within WINDOW_DAYS of its due day, so an old request never gets a late one.
  * They stop for good when:
- *   - the prospect orders: any portal with their email (a quote: once it's paid)
+ *   - the prospect orders: concept reminders stop at any portal with their
+ *     email (a quote's own reminders take over); quote reminders stop once
+ *     that quote or any other order with their email is paid
  *   - the prospect clicks "Stop these reminders" (/stop-reminders), or their
  *     mail app's unsubscribe button (/api/follow-ups/stop)
  *   - the team clicks "Stop follow-ups", after a reply or a booked call (neither
@@ -74,9 +79,9 @@ const stopOneClick = (id: string, key: string) =>
 const isOpenQuote = (order: PortalOrder) =>
   Boolean(
     order.manual &&
-      !order.demo &&
-      order.payment?.status === "awaiting" &&
-      order.client.email,
+    !order.demo &&
+    order.payment?.status === "awaiting" &&
+    order.client.email,
   );
 
 function dueStep(
@@ -119,6 +124,27 @@ async function updateMarks(id: string, change: MarksChange) {
   }
 }
 
+/** Change a record's marks only when `claim` returns new ones; the saved marks, else null. */
+async function claimMarks(
+  id: string,
+  claim: (marks?: ProspectFollowUps) => ProspectFollowUps | null,
+) {
+  if (id.startsWith("C-")) {
+    const request = await claimConceptRequest(id, (current) => {
+      const next = claim(current.followUps);
+      if (next) current.followUps = next;
+      return Boolean(next);
+    });
+    return request?.followUps ?? null;
+  }
+  const order = await claimOrder(id, (current) => {
+    const next = claim(current.payReminders);
+    if (next) current.payReminders = next;
+    return Boolean(next);
+  });
+  return order?.payReminders ?? null;
+}
+
 /**
  * Claim a step on the record, send it, and release the claim if sending fails:
  * running twice never sends twice, and a failure is tried again tomorrow. If
@@ -131,19 +157,20 @@ async function sendStep(
   send: (stopKey: string) => Promise<void>,
 ) {
   const at = new Date(now).toISOString();
-  let stopKey = "";
-  await updateMarks(id, (marks) => {
-    if (marks?.stopped || marks?.[step.key]) return marks;
-    stopKey = marks?.stopKey ?? newKey();
-    const next: ProspectFollowUps = { ...marks, stopKey };
+  const claimed = await claimMarks(id, (marks) => {
+    if (marks?.stopped || marks?.[step.key]) return null;
+    const next: ProspectFollowUps = {
+      ...marks,
+      stopKey: marks?.stopKey ?? newKey(),
+    };
     for (const item of STEPS) {
       if (item.days <= step.days) next[item.key] ??= at;
     }
     return next;
   });
-  if (!stopKey) return false;
+  if (!claimed?.stopKey) return false;
   try {
-    await send(stopKey);
+    await send(claimed.stopKey);
     return true;
   } catch (error) {
     console.error(`[prospect follow-ups] ${id} ${step.key} failed:`, error);
@@ -163,11 +190,14 @@ export async function sendProspectFollowUps(now = Date.now()) {
     listConceptRequests(),
     listPortalOrders(),
   ]);
-  const customers = new Set(
-    orders
-      .filter((order) => !order.demo)
-      .map((order) => order.client.email.toLowerCase()),
-  );
+  const clients = (keep: (order: PortalOrder) => boolean) =>
+    new Set(
+      orders
+        .filter((order) => !order.demo && keep(order))
+        .map((order) => order.client.email.toLowerCase()),
+    );
+  const customers = clients(() => true);
+  const payers = clients(isPaid);
   const sent: string[] = [];
 
   for (const request of requests) {
@@ -185,6 +215,7 @@ export async function sendProspectFollowUps(now = Date.now()) {
 
   for (const order of orders) {
     if (!isOpenQuote(order)) continue;
+    if (payers.has(order.client.email.toLowerCase())) continue;
     const step = dueStep(order.createdAt, order.payReminders, now);
     if (!step) continue;
     const ok = await sendStep(order.ref, step, now, (stopKey) =>
@@ -242,8 +273,7 @@ export async function orderFor(email: string) {
   return (
     orders.find(
       (order) =>
-        !order.demo &&
-        order.client.email.toLowerCase() === email.toLowerCase(),
+        !order.demo && order.client.email.toLowerCase() === email.toLowerCase(),
     )?.ref ?? null
   );
 }
