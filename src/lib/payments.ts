@@ -16,10 +16,13 @@ import {
   type VideoPackage,
 } from "@/lib/packages";
 import {
+  claimDuplicatePayment,
+  claimOrder,
   clientLink,
   clientPath,
   markPortalPaid,
   openPortal,
+  updateOrder,
   type PortalOrder,
 } from "@/lib/portal";
 import {
@@ -277,6 +280,7 @@ export async function describeOrder(sessionId: string) {
 /** Record a paid order once: the team alert, then the customer's confirmation. */
 export async function fulfil(sessionId: string) {
   let order = await loadOrder(sessionId);
+  if (!order.videoPackage && !order.portalRef) return order;
   if (order.portalRef) {
     await settlePortalPayment(sessionId, order);
     return order;
@@ -295,7 +299,20 @@ export async function fulfil(sessionId: string) {
   }
 
   const portal = await openPortal(order);
-  await sendOrderAlert(order);
+  const announced = await claimOrder(portal.ref, (current) => {
+    if (current.announcedAt) return false;
+    current.announcedAt = new Date().toISOString();
+    return true;
+  });
+  if (!announced) return order;
+  try {
+    await sendOrderAlert(order);
+  } catch (error) {
+    await updateOrder(portal.ref, (current) => {
+      delete current.announcedAt;
+    });
+    throw error;
+  }
   await stripe()
     .paymentIntents.update(paymentId, {
       metadata: { ...intent.metadata, fulfilled: new Date().toISOString() },
@@ -411,7 +428,11 @@ async function settlePortalPayment(sessionId: string, paid: Order) {
     invoiceUrl: order.invoiceUrl,
     dashboardUrl: order.dashboardUrl,
   });
-  if (!portal) return;
+  if (!portal) {
+    if (order.dashboardUrl)
+      await alertDuplicatePayment(ref, order.dashboardUrl, order);
+    return;
+  }
   const title = `Payment received: ${portal.packageName} (${order.amount}) from ${portal.client.name || portal.client.email}`;
   const fields: [string, string | undefined][] = [
     ["Project", `${portal.ref} · ${portal.packageName}`],
@@ -438,4 +459,43 @@ async function settlePortalPayment(sessionId: string, paid: Order) {
     text: `${alertText(title, fields)}\n\nPortal: ${teamOrderLink(portal.ref, member)}`,
     replyTo: portal.client.email || undefined,
   }));
+}
+
+async function alertDuplicatePayment(
+  ref: string,
+  payment: string,
+  order: Order,
+) {
+  const portal = await claimDuplicatePayment(ref, payment);
+  if (!portal) return;
+  const title = `Paid twice: ${portal.packageName} (${order.amount}) from ${portal.client.name || portal.client.email}`;
+  const fields: [string, string | undefined][] = [
+    ["Project", `${portal.ref} · ${portal.packageName}`],
+    ["Extra payment", order.amount],
+    ["Refund this one", payment],
+    ["First payment", portal.dashboardUrl ?? "Marked paid outside Stripe"],
+    ["Name", portal.client.name],
+    ["Email", portal.client.email],
+    ["Paid at", `${order.paidAt} (Arizona time)`],
+  ];
+  try {
+    await alertTeam((member) => ({
+      subject: `⚠️ ${title}`,
+      html: alertEmail({
+        title,
+        fields,
+        tone: "refund",
+        link: { label: "Refund in Stripe", href: payment },
+      }),
+      text: `${alertText(title, fields)}\n\nPortal: ${teamOrderLink(portal.ref, member)}`,
+      replyTo: portal.client.email || undefined,
+    }));
+  } catch (error) {
+    await updateOrder(ref, (current) => {
+      current.duplicatePayments = current.duplicatePayments?.filter(
+        (url) => url !== payment,
+      );
+    });
+    throw error;
+  }
 }

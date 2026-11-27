@@ -83,7 +83,9 @@ export function detailsTable(rows: [string, string | undefined][]) {
 /** A reminder's opt-out line: why they get it, and the link that stops it. */
 export type StopLink = { reason: string; href: string };
 
-const footer = (stop?: StopLink) => `<tr><td style="padding:22px 32px 0;text-align:center;font-family:${BRAND.font};font-size:12px;line-height:1.7;color:${BRAND.muted}">
+const footer = (
+  stop?: StopLink,
+) => `<tr><td style="padding:22px 32px 0;text-align:center;font-family:${BRAND.font};font-size:12px;line-height:1.7;color:${BRAND.muted}">
   <a href="${SITE_URL}/work" style="color:${BRAND.muted};text-decoration:underline">Our work</a> &nbsp;·&nbsp;
   <a href="${SITE_URL}/#pricing" style="color:${BRAND.muted};text-decoration:underline">Pricing</a> &nbsp;·&nbsp;
   <a href="${SITE_URL}/contact" style="color:${BRAND.muted};text-decoration:underline">Contact</a><br>
@@ -139,7 +141,7 @@ ${footer(opts.stopLink)}`,
   );
 }
 
-export type AlertTone = "lead" | "paid";
+export type AlertTone = "lead" | "paid" | "refund";
 
 const TONE: Record<
   AlertTone,
@@ -156,6 +158,12 @@ const TONE: Record<
     soft: "#E3F3EA",
     label: "Payment received",
     note: "Money is in. Reply to the client within 24 hours to collect their brief.",
+  },
+  refund: {
+    color: "#B45309",
+    soft: "#FEF3C7",
+    label: "Paid twice",
+    note: "Refund the extra payment in Stripe, then let the client know.",
   },
 };
 

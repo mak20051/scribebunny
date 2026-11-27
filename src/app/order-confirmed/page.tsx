@@ -57,9 +57,12 @@ export default async function OrderConfirmedPage({ searchParams }: Props) {
   const order = await loadOrder(sessionId);
   const paid = order?.paid ?? false;
   const portal = paid ? await getPortalOrder(order!.reference) : null;
-  const portalHref = portal
-    ? clientLink(portal)
-    : `mailto:${EMAIL}?subject=${encodeURIComponent("Brief for my video")}`;
+  const brief = portal
+    ? { href: clientLink(portal), label: "Open Your Project Portal" }
+    : {
+        href: `mailto:${EMAIL}?subject=${encodeURIComponent("Brief for my video")}`,
+        label: "Send Your Brief",
+      };
 
   return (
     <SiteShell>
@@ -127,8 +130,8 @@ export default async function OrderConfirmedPage({ searchParams }: Props) {
         </div>
 
         <div className="mt-14 flex flex-wrap justify-center gap-4">
-          <a href={portalHref} className="btn-primary text-lg">
-            {order?.paid ? "Open Your Project Portal" : "Send Your Brief"}
+          <a href={brief.href} className="btn-primary text-lg">
+            {brief.label}
           </a>
           <a
             href={CALENDLY_URL}

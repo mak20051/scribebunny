@@ -18,7 +18,8 @@ page for page at the time of the rebuild.
 - `npm run build`: production build
 - `npm run lint`: ESLint
 - `npm run typecheck`: route types (`next typegen`) and `tsc --noEmit`
-- `npm test`: Vitest (`src/**/*.test.ts`, Node, in-memory store)
+- `npm test`: Vitest (`src/**/*.test.ts`, Node, in-memory store; shared test
+  records in `src/test/fixtures.ts`)
 - `npm run check`: typecheck, lint and tests; GitHub Actions runs it on every
   push to `main` and every pull request (`.github/workflows/check.yml`)
 
@@ -34,6 +35,11 @@ page for page at the time of the rebuild.
    bypass the architecture. Keep code clean and consistent.
 4. Bugs found along the way get their own branch and pull request, with the fix
    and a test that fails without it, apart from the work in progress.
+
+Sending something once (payment emails, follow-ups, reminders): claim it with
+`claimJson` (`claimOrder`, `claimConceptRequest`), whose result says whether
+this call made the change. Never set a flag inside an `updateJson` change: a
+retried attempt leaves it set even when another call won.
 
 Tests never touch real services: they run without `BLOB_READ_WRITE_TOKEN`
 (the store is in memory; `growth.test.ts` asserts this), without SMTP (emails
@@ -170,12 +176,15 @@ LLC, so the Stripe account behind `STRIPE_SECRET_KEY` must be Infinisys LLC's.
 
 ## Environment
 Vercel env vars: `STRIPE_SECRET_KEY`, optional `STRIPE_WEBHOOK_SECRET`
-(endpoint `/api/stripe/webhook`, event `checkout.session.completed`), plus
+(endpoint `/api/stripe/webhook`, events `checkout.session.completed` and
+`checkout.session.async_payment_succeeded`, so delayed bank payments are
+fulfilled when they clear), plus
 SMTP settings: `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`,
 `SMTP_PASS`, `LEAD_FROM_EMAIL`. Lead and order alerts go to `TEAM_EMAILS` in
 `src/lib/site.ts`. Locally, without SMTP, emails are logged and written to
 `EMAIL_PREVIEW_DIR` if set. Never commit `.env*` files.
 
 ## Deploys
-Pushing to `main` deploys to production. Use a branch for changes you want to
-preview first.
+`main` is protected: no direct pushes, for anyone. Push a branch (Vercel builds
+a preview), open a pull request, and merge it once the `check` job passes.
+Merging to `main` deploys to production.

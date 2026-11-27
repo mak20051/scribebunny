@@ -1,6 +1,7 @@
 import { alertTeam, teamOrderLink } from "@/lib/access";
 import { alertEmail, alertText, escapeHtml } from "@/lib/email-layout";
 import {
+  claimOrder,
   clientLink,
   emailClient,
   launchLink,
@@ -169,17 +170,16 @@ export async function sendFollowUps(now = Date.now()) {
     if (!due) continue;
 
     const at = new Date(now).toISOString();
-    let claimed = false;
-    const claimedOrder = await updateOrder(order.ref, (current) => {
-      if (current.followUps?.[due.key]) return;
-      claimed = true;
+    const claimedOrder = await claimOrder(order.ref, (current) => {
+      if (current.followUps?.[due.key]) return false;
       const marks: Partial<Record<FollowUp, string>> = { ...current.followUps };
       for (const item of FOLLOW_UPS) {
         if (item.days <= due.days) marks[item.key] ??= at;
       }
       current.followUps = marks;
+      return true;
     });
-    if (!claimed) continue;
+    if (!claimedOrder) continue;
 
     try {
       if (due.key === "day7") await sendDay7(claimedOrder);
