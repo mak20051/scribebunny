@@ -12,7 +12,12 @@ import {
   safeFileName,
 } from "@/lib/attachments";
 import { openOrder } from "@/lib/portal";
-import { putFile, storeConfigured, storePathname } from "@/lib/store";
+import {
+  listPaths,
+  putFile,
+  storeConfigured,
+  storePathname,
+} from "@/lib/store";
 
 /**
  * Message attachments. With the Blob store, browsers upload straight to it:
@@ -29,14 +34,8 @@ async function rulesFor(ref: string, key: string) {
       maximumSizeInBytes: MAX_FILE_BYTES,
     };
   }
-  const files = opened.order.messages.reduce(
-    (count, message) => count + (message.attachments?.length ?? 0),
-    0,
-  );
-  if (files >= DEMO_MAX_FILES) {
-    throw new Error(
-      "The demo is full of files. Press Reset demo to start again.",
-    );
+  if ((await listPaths(filesFolder(ref))).length >= DEMO_MAX_FILES) {
+    throw new Error("The demo is full of files. Ask the team to reset it.");
   }
   return {
     allowedContentTypes: DEMO_TYPES,

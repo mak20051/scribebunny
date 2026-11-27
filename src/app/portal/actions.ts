@@ -130,7 +130,9 @@ export async function setOrderStatusAction(formData: FormData) {
 }
 
 /** Demo project only: back to the sample data. */
-export async function resetDemoAction() {
+export async function resetDemoAction(formData: FormData) {
+  const { ref } = await authorize(formData, true);
+  if (ref !== DEMO_REF) throw new Error("Only the demo can be reset.");
   await resetDemo();
   revalidatePath(`/portal/${DEMO_REF}`);
 }
