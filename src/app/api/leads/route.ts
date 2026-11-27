@@ -19,6 +19,39 @@ type LeadPayload = {
   attribution?: unknown;
 };
 
+const text = (value: unknown, max: number) =>
+  typeof value === "string" ? value.trim().slice(0, max) : "";
+
+/** The form's lead with every value as text, or null when there are no fields. */
+function readLead(body: unknown): LeadPayload | null {
+  if (!body || typeof body !== "object") return null;
+  const raw = body as Record<string, unknown>;
+  if (
+    !raw.fields ||
+    typeof raw.fields !== "object" ||
+    Array.isArray(raw.fields)
+  ) {
+    return null;
+  }
+  const fields = Object.fromEntries(
+    Object.entries(raw.fields as Record<string, unknown>)
+      .slice(0, 20)
+      .map(([key, value]) => [text(key, 40), text(value, 4000) || undefined]),
+  );
+  return {
+    type: text(raw.type, 40) || "lead",
+    subject: text(raw.subject, 200) || "Website lead",
+    fields,
+    transcript: Array.isArray(raw.transcript)
+      ? raw.transcript
+          .map((line) => text(line, 1000))
+          .filter(Boolean)
+          .slice(0, 200)
+      : undefined,
+    attribution: raw.attribution,
+  };
+}
+
 async function sendLeadEmail(lead: LeadPayload, source: LeadSource) {
   const fields: [string, string | undefined][] = [
     ["Lead type", lead.type],
@@ -42,8 +75,14 @@ async function sendLeadEmail(lead: LeadPayload, source: LeadSource) {
 }
 
 export async function POST(request: Request) {
+  const lead = readLead(await request.json().catch(() => null));
+  if (!lead) {
+    return NextResponse.json(
+      { ok: false, error: "Missing form fields" },
+      { status: 400 },
+    );
+  }
   try {
-    const lead = (await request.json()) as LeadPayload;
     const source = leadSource(request, lead.attribution);
     await sendLeadEmail(lead, source);
     await recordLead({
@@ -55,7 +94,7 @@ export async function POST(request: Request) {
       source,
     }).catch((error) => console.error("Lead record failed", error));
 
-    const fields = lead.fields ?? {};
+    const fields = lead.fields;
     void forwardToCrm({
       name: fields.Name,
       email: fields.Email,
