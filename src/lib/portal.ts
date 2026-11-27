@@ -527,8 +527,13 @@ export async function updateVideo(
     if (!target) throw new Error(`No video ${number} on ${ref}`);
     wasStatus = target.status;
     hadUrl = target.deliveryUrl;
-    Object.assign(target, changes, { updatedAt: new Date().toISOString() });
+    if (changes.title) target.title = changes.title;
+    if (changes.status) target.status = changes.status;
+    if (changes.deliveryUrl !== undefined) {
+      target.deliveryUrl = changes.deliveryUrl;
+    }
     if (!target.deliveryUrl) delete target.deliveryUrl;
+    target.updatedAt = new Date().toISOString();
   });
   const video = order.videos.find((item) => item.number === number)!;
   const statusChanged = video.status !== wasStatus;
