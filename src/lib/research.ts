@@ -1,5 +1,6 @@
-import { lookup } from "node:dns/promises";
-import { isIP } from "node:net";
+import { lookup } from "node:dns";
+import { BlockList, isIP, type LookupFunction } from "node:net";
+import { Agent, fetch } from "undici";
 
 /**
  * Reads a prospect's website so concepts can be grounded in it.
@@ -7,9 +8,9 @@ import { isIP } from "node:net";
  *   url ─▶ public-host check ─▶ fetch (redirects re-checked, 10s, 1.5MB cap)
  *       ─▶ title, description, headings, visible text (capped at ~8k chars)
  *
- * The URL comes from a public form, so every hop is checked against private,
- * loopback, and link-local addresses before we connect (no SSRF into internal
- * networks).
+ * The URL comes from a public form, so every connection's address is checked
+ * against private, loopback, link-local and IPv4-embedding ranges as it opens
+ * (no SSRF into internal networks, even when DNS answers change).
  */
 
 export type WebsiteResearch = {
@@ -24,43 +25,63 @@ const MAX_BYTES = 1_500_000;
 const MAX_TEXT = 8_000;
 const MAX_REDIRECTS = 3;
 
-function isPrivateAddress(address: string) {
-  if (isIP(address) === 6) {
-    const lower = address.toLowerCase();
-    if (lower.startsWith("::ffff:")) return isPrivateAddress(lower.slice(7));
-    return (
-      lower === "::1" ||
-      lower === "::" ||
-      lower.startsWith("fc") ||
-      lower.startsWith("fd") ||
-      lower.startsWith("fe80")
-    );
-  }
-  const [a, b] = address.split(".").map(Number);
-  return (
-    a === 0 ||
-    a === 10 ||
-    a === 127 ||
-    (a === 100 && b >= 64 && b <= 127) ||
-    (a === 169 && b === 254) ||
-    (a === 172 && b >= 16 && b <= 31) ||
-    (a === 192 && b === 168) ||
-    a >= 224
-  );
+const PRIVATE = new BlockList();
+for (const [network, prefix] of [
+  ["0.0.0.0", 8],
+  ["10.0.0.0", 8],
+  ["100.64.0.0", 10],
+  ["127.0.0.0", 8],
+  ["169.254.0.0", 16],
+  ["172.16.0.0", 12],
+  ["192.168.0.0", 16],
+  ["224.0.0.0", 3],
+] as const) {
+  PRIVATE.addSubnet(network, prefix, "ipv4");
+}
+for (const [network, prefix] of [
+  ["::", 96],
+  ["64:ff9b::", 96],
+  ["64:ff9b:1::", 48],
+  ["2002::", 16],
+  ["fc00::", 7],
+  ["fe80::", 10],
+  ["fec0::", 10],
+  ["ff00::", 8],
+] as const) {
+  PRIVATE.addSubnet(network, prefix, "ipv6");
 }
 
-async function assertPublic(url: URL) {
+const isPrivateAddress = (address: string) =>
+  PRIVATE.check(address, isIP(address) === 6 ? "ipv6" : "ipv4");
+
+class NotPublicError extends Error {
+  constructor() {
+    super("Not a public website");
+  }
+}
+
+const publicLookup: LookupFunction = (hostname, options, callback) =>
+  lookup(hostname, { ...options, all: true }, (error, addresses) => {
+    if (error) return callback(error, []);
+    if (addresses.some(({ address }) => isPrivateAddress(address))) {
+      return callback(new NotPublicError(), []);
+    }
+    if (options.all) return callback(null, addresses);
+    callback(null, addresses[0].address, addresses[0].family);
+  });
+
+const publicAgent = new Agent({ connect: { lookup: publicLookup } });
+
+function assertPublic(url: URL) {
   if (url.protocol !== "http:" && url.protocol !== "https:") {
     throw new Error("Only http and https websites can be read");
   }
-  if (!url.hostname.includes(".") || url.hostname.endsWith(".local")) {
-    throw new Error("Not a public website");
-  }
-  const addresses = isIP(url.hostname)
-    ? [{ address: url.hostname }]
-    : await lookup(url.hostname, { all: true });
-  if (addresses.some(({ address }) => isPrivateAddress(address))) {
-    throw new Error("Not a public website");
+  if (
+    !url.hostname.includes(".") ||
+    url.hostname.endsWith(".local") ||
+    (isIP(url.hostname) && isPrivateAddress(url.hostname))
+  ) {
+    throw new NotPublicError();
   }
 }
 
@@ -79,8 +100,9 @@ export function normalizeWebsite(raw: string) {
 async function fetchPublic(start: URL) {
   let url = start;
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
-    await assertPublic(url);
+    assertPublic(url);
     const response = await fetch(url, {
+      dispatcher: publicAgent,
       redirect: "manual",
       signal: AbortSignal.timeout(10_000),
       headers: {
@@ -88,6 +110,10 @@ async function fetchPublic(start: URL) {
           "Mozilla/5.0 (compatible; ScribebunnyConcepts/1.0; +https://scribebunny.com)",
         Accept: "text/html,application/xhtml+xml",
       },
+    }).catch((error: unknown) => {
+      throw error instanceof TypeError && error.cause instanceof NotPublicError
+        ? error.cause
+        : error;
     });
     const location = response.headers.get("location");
     if (response.status >= 300 && response.status < 400 && location) {
