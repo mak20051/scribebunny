@@ -54,12 +54,16 @@ beforeAll(() =>
         payment: { status: "paid", paidAt: daysAgo(1) },
       }),
       quote("SB-DEMOQ001", "demo@example.com", 2.1, { demo: true }),
+      quote("SB-OLDQUOTE", "revised@example.com", 2.1),
+      quote("SB-NEWQUOTE", "Revised@Example.com", 1, {
+        payment: { status: "paid", paidAt: daysAgo(0.5) },
+      }),
     ],
   }),
 );
 
 describe("prospect follow-ups", () => {
-  test("sends day 2 or day 5 when due, never to buyers, stopped or late prospects", async () => {
+  test("sends day 2 or day 5 when due, never to buyers, stopped or late prospects, or for a quote they replaced and paid", async () => {
     const result = await sendProspectFollowUps(NOW);
     expect(result.sent.sort()).toEqual([
       "C-DAY2AAAA day2",
