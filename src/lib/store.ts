@@ -109,6 +109,25 @@ export async function updateJson<T>(
   throw new Error(`Could not update ${path}: too many concurrent changes`);
 }
 
+/**
+ * Change a document only when `claim` returns true, retrying on concurrent
+ * writes. Returns the saved document when this call made the change, else null.
+ */
+export async function claimJson<T>(
+  path: string,
+  claim: (value: T) => boolean,
+): Promise<T | null> {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const current = await readJson<T>(path);
+    if (!current) throw new Error(`No document at ${path}`);
+    if (!claim(current.value)) return null;
+    if (await writeJson(path, current.value, { etag: current.etag })) {
+      return current.value;
+    }
+  }
+  throw new Error(`Could not update ${path}: too many concurrent changes`);
+}
+
 /** Paths of every document under a folder, e.g. listPaths("orders/"). */
 export async function listPaths(folder: string): Promise<string[]> {
   if (!storeConfigured) {

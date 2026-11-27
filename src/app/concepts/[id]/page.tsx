@@ -264,6 +264,12 @@ export default async function ConceptReviewPage({
             </label>
           </fieldset>
         ))}
+        {request.status === "sent" ? (
+          <p className="text-base text-gray-600 sm:text-right">
+            Already sent. Changes here reach {request.lead.name.split(" ")[0]}{" "}
+            only when you send again.
+          </p>
+        ) : null}
         <div className="flex flex-col gap-4 sm:flex-row sm:justify-end">
           <SubmitButton className="btn-secondary w-full sm:w-auto">
             Save changes

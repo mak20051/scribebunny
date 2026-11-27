@@ -11,7 +11,13 @@ import { sourceFields, type LeadSource } from "@/lib/lead-source";
 import { formatUsd, VIDEO_SPEC, videoPackages } from "@/lib/packages";
 import { researchWebsite, type WebsiteResearch } from "@/lib/research";
 import { CALENDLY_URL, SITE_URL } from "@/lib/site";
-import { listPaths, readJson, updateJson, writeJson } from "@/lib/store";
+import {
+  claimJson,
+  listPaths,
+  readJson,
+  updateJson,
+  writeJson,
+} from "@/lib/store";
 import type { ProspectFollowUps } from "@/lib/prospect-follow-ups";
 
 /**
@@ -57,6 +63,8 @@ export type ConceptRequest = {
   concepts: Concept[];
   note?: string;
   sentAt?: string;
+  /** The concepts in the last email to the prospect (missing on requests sent before 2026-11-28). */
+  sentConcepts?: Concept[];
   /** Reminders after the concepts went out (lib/prospect-follow-ups.ts). */
   followUps?: ProspectFollowUps;
   /** Where the lead came from; missing on requests before 2026-11-16. */
@@ -85,6 +93,12 @@ export const updateConceptRequest = (
   id: string,
   change: (request: ConceptRequest) => void,
 ) => updateJson<ConceptRequest>(requestPath(id), change);
+
+/** Change a request only when `claim` returns true; the request if this call changed it, else null. */
+export const claimConceptRequest = (
+  id: string,
+  claim: (request: ConceptRequest) => boolean,
+) => claimJson<ConceptRequest>(requestPath(id), claim);
 
 /** Every concept request, newest first. */
 export async function listConceptRequests() {
@@ -379,6 +393,7 @@ ${request.concepts.map(conceptHtml).join("")}
   return updateJson<ConceptRequest>(requestPath(id), (current) => {
     current.status = "sent";
     current.sentAt = new Date().toISOString();
+    current.sentConcepts = request.concepts;
   });
 }
 
