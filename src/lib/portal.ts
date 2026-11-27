@@ -24,6 +24,7 @@ import type { Order } from "@/lib/payments";
 import { keyMatches, sign } from "@/lib/signing";
 import { PARENT_COMPANY, SITE_URL } from "@/lib/site";
 import {
+  claimJson,
   deleteFiles,
   listPaths,
   readJson,
@@ -440,10 +441,8 @@ export async function markPortalPaid(
     dashboardUrl?: string;
   },
 ) {
-  let claimed = false;
-  const order = await updateOrder(ref, (current) => {
-    if (current.payment?.status !== "awaiting") return;
-    claimed = true;
+  const order = await claimOrder(ref, (current) => {
+    if (current.payment?.status !== "awaiting") return false;
     current.payment = {
       status: "paid",
       method: details.method,
@@ -451,8 +450,9 @@ export async function markPortalPaid(
     };
     if (details.invoiceUrl) current.invoiceUrl = details.invoiceUrl;
     if (details.dashboardUrl) current.dashboardUrl = details.dashboardUrl;
+    return true;
   });
-  if (!claimed) return null;
+  if (!order) return null;
   if (!order.demo) {
     await emailClient(order, {
       subject: `Payment received for ${order.ref}`,
@@ -464,7 +464,9 @@ export async function markPortalPaid(
           : ""
       }</p><p>Next, send us your brief in your portal: your website, what the video should explain, who it's for, and any brand files.</p>`,
       preheader: "Send us your brief and we'll start sketching.",
-    });
+    }).catch((error) =>
+      console.error(`[portal] payment email to ${order.ref} failed:`, error),
+    );
   }
   return order;
 }
@@ -474,6 +476,12 @@ export const updateOrder = (
   ref: string,
   change: (order: PortalOrder) => void,
 ) => updateJson<PortalOrder>(orderPath(ref), change);
+
+/** Change an order only when `claim` returns true; the order if this call changed it, else null. */
+export const claimOrder = (
+  ref: string,
+  claim: (order: PortalOrder) => boolean,
+) => claimJson<PortalOrder>(orderPath(ref), claim);
 
 /** A new client link for an order (the old one stops working), emailed to the client. */
 export async function replaceClientKey(ref: string) {
@@ -722,8 +730,12 @@ export async function emailClient(
       stopLink: content.stop,
     }),
     text: `Hi ${order.client.name.split(" ")[0] || "there"},\n\n${content.heading}\n\n${button.label}: ${link}\n\nThe Scribebunny studio${
-      content.stop ? `\n\n${content.stop.reason} Stop these reminders: ${content.stop.href}` : ""
+      content.stop
+        ? `\n\n${content.stop.reason} Stop these reminders: ${content.stop.href}`
+        : ""
     }`,
-    headers: content.stop ? unsubscribeHeaders(content.stop.oneClick) : undefined,
+    headers: content.stop
+      ? unsubscribeHeaders(content.stop.oneClick)
+      : undefined,
   });
 }
