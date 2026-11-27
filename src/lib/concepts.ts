@@ -63,6 +63,8 @@ export type ConceptRequest = {
   concepts: Concept[];
   note?: string;
   sentAt?: string;
+  /** The concepts in the last email to the prospect (missing on requests sent before 2026-11-28). */
+  sentConcepts?: Concept[];
   /** Reminders after the concepts went out (lib/prospect-follow-ups.ts). */
   followUps?: ProspectFollowUps;
   /** Where the lead came from; missing on requests before 2026-11-16. */
@@ -391,6 +393,7 @@ ${request.concepts.map(conceptHtml).join("")}
   return updateJson<ConceptRequest>(requestPath(id), (current) => {
     current.status = "sent";
     current.sentAt = new Date().toISOString();
+    current.sentConcepts = request.concepts;
   });
 }
 

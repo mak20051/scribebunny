@@ -340,7 +340,8 @@ function conceptsEmail(
 
 function sendConceptsDay2(request: ConceptRequest, stopKey: string) {
   const site = request.research?.url ?? request.lead.website;
-  const titles = request.concepts
+  const received = request.sentConcepts ?? request.concepts;
+  const titles = received
     .map(
       (concept) =>
         `<li style="margin:0 0 6px"><strong>${escapeHtml(concept.title)}</strong> (${escapeHtml(concept.style)})</li>`,
@@ -359,7 +360,7 @@ function sendConceptsDay2(request: ConceptRequest, stopKey: string) {
 <p>${escapeHtml(fiveLine)}</p>`,
     text: [
       "A couple of days ago we sent you three video concepts:",
-      ...request.concepts.map(
+      ...received.map(
         (concept, index) => `${index + 1}. ${concept.title} (${concept.style})`,
       ),
       "",
