@@ -86,6 +86,18 @@ describe("prospect follow-ups", () => {
     }
   });
 
+  test("emails ask for a reply, a call or the invoice, never an online payment", async () => {
+    const byRecipient = Object.fromEntries(
+      sent.mock.calls.map(([message]) => [message.to[0], message]),
+    );
+    expect(byRecipient["quote@example.com"].html).toContain("invoice");
+    for (const message of Object.values(byRecipient)) {
+      expect(message.html).not.toMatch(
+        /Pay and get started|Pay securely|Stripe|order online/i,
+      );
+    }
+  });
+
   test("day 5 sent first marks day 2 too, and a second run sends nothing", async () => {
     const marks = (await getConceptRequest("C-DAY5AAAA"))?.followUps;
     expect(marks?.day2).toBe(marks?.day5);

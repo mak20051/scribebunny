@@ -34,7 +34,7 @@ import { CALENDLY_URL, PARENT_COMPANY, SITE_URL } from "@/lib/site";
  *                          │           the 3 titles, the price, the 5-video upsell
  *                          └─ day 5 ─▶ "Your concepts are ready when you are"
  *                                      book a call; says it's the last reminder
- *   custom-price portal ───┬─ day 2 ─▶ "Your project is ready to start"  price, Pay button
+ *   custom-price portal ───┬─ day 2 ─▶ "Your project is ready to start"  price, invoice
  *   not paid yet (a quote) └─ day 5 ─▶ "Shall we start on your video?"  last reminder
  *
  * Sent by the daily cron (/api/cron/follow-ups), each at most once and only
@@ -374,15 +374,11 @@ function sendConceptsDay2(request: ConceptRequest, stopKey: string) {
       `Reply with the number you like best and we'll turn it into your video. ${singleLine}`,
       fiveLine,
       "",
-      `Order: ${SITE_URL}/#pricing`,
       `Or book a free call: ${CALENDLY_URL}`,
     ].join("\n"),
     preheader: "Reply with a number and we'll start sketching.",
-    button: {
-      label: "Turn a concept into a video",
-      href: `${SITE_URL}/#pricing`,
-    },
-    afterButton: `Or book a free call: ${CALENDLY_URL}`,
+    button: { label: "Book a free call", href: CALENDLY_URL },
+    afterButton: "Or just reply with the number you like best.",
   });
 }
 
@@ -400,13 +396,12 @@ function sendConceptsDay5(request: ConceptRequest, stopKey: string) {
       "Not sure which one fits, or want to change something? Book a free call, or simply reply to this email.",
       "",
       `Book a free call: ${CALENDLY_URL}`,
-      `Or order: ${SITE_URL}/#pricing`,
       "",
       "This is our last reminder about your concepts.",
     ].join("\n"),
     preheader: "Book a free call, or reply and tell us what you think.",
     button: { label: "Book a free call", href: CALENDLY_URL },
-    afterButton: `Or order online: ${SITE_URL}/#pricing`,
+    afterButton: "Or simply reply to this email.",
   });
 }
 
@@ -431,9 +426,9 @@ function sendQuoteDay2(order: PortalOrder, stopKey: string) {
         ["Price", order.amount],
         ["Delivery", order.turnaround],
       ],
-    )}<p>Pay securely in your portal and we'll start sketching. Your invoice comes from ${escapeHtml(PARENT_COMPANY)}. Questions about the quote? Just reply to this email.</p>`,
-    preheader: "Pay securely in your portal and we'll start sketching.",
-    button: { label: "Pay and get started", href: clientLink(order) },
+    )}<p>Once the invoice from ${escapeHtml(PARENT_COMPANY)} is paid, we'll start sketching. Questions about the quote, or no invoice yet? Just reply to this email.</p>`,
+    preheader: "Once the invoice is paid, we'll start sketching.",
+    button: { label: "Open your project portal", href: clientLink(order) },
     stop: quoteStop(order, stopKey),
   });
 }
@@ -443,9 +438,9 @@ function sendQuoteDay5(order: PortalOrder, stopKey: string) {
     subject: `Last reminder: your quote for ${order.packageName}`,
     eyebrow: `Project ${order.ref} · ${order.amount}`,
     heading: "Shall we start on your video?",
-    bodyHtml: `<p>This is our last reminder about your quote for <strong>${escapeHtml(order.packageName)}</strong> (${escapeHtml(order.amount)}). Your portal stays open, so you can pay and start whenever you're ready.</p><p>If something doesn't fit, like the price, the number of videos or the timing, reply and tell us what would work better.</p>`,
+    bodyHtml: `<p>This is our last reminder about your quote for <strong>${escapeHtml(order.packageName)}</strong> (${escapeHtml(order.amount)}). Your portal stays open, so we can start as soon as the invoice is paid.</p><p>If something doesn't fit, like the price, the number of videos or the timing, reply and tell us what would work better.</p>`,
     preheader: "Your portal stays open whenever you're ready.",
-    button: { label: "Pay and get started", href: clientLink(order) },
+    button: { label: "Open your project portal", href: clientLink(order) },
     stop: quoteStop(order, stopKey),
   });
 }

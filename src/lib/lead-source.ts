@@ -10,8 +10,8 @@
  *   │ (90 days)                               │        │   region, country), device   │
  *   └─────────────────────────────────────────┘        └──────────────┬───────────────┘
  *                                                                     ▼
- *              lead record, concept request, Stripe metadata -> order, team alert,
- *              CRM message, growth board
+ *              lead record, concept request, team alert, CRM message,
+ *              growth board
  *
  * The IP address is never stored. Leads sent before this shipped have no source.
  */
@@ -372,64 +372,3 @@ export const sourceSummary = (source: LeadSource) =>
     .filter(([, value]) => value)
     .map(([label, value]) => `${label}: ${value}`)
     .join("; ")}`;
-
-/** Stripe metadata (flat strings) so a paid order keeps its source. */
-export function sourceMetadata(source: LeadSource): Record<string, string> {
-  const values: Record<string, string | undefined> = {
-    src_channel: source.channel,
-    src_source: source.source,
-    src_medium: source.medium,
-    src_campaign: source.campaign,
-    src_term: source.term,
-    src_content: source.content,
-    src_landing: source.landing,
-    src_page: source.page,
-    src_first_channel: source.first?.channel,
-    src_first_source: source.first?.source,
-    src_first_landing: source.first?.landing,
-    src_first_at: source.first?.at,
-    src_city: source.city,
-    src_region: source.region,
-    src_country: source.country,
-    src_device: source.device,
-  };
-  return Object.fromEntries(
-    Object.entries(values).filter((entry): entry is [string, string] =>
-      Boolean(entry[1]),
-    ),
-  );
-}
-
-const asChannel = (value?: string): Channel =>
-  CHANNELS.find((channel) => channel === value) ?? "Unknown";
-
-export function sourceFromMetadata(
-  metadata?: Record<string, string> | null,
-): LeadSource | undefined {
-  if (!metadata?.src_channel) return undefined;
-  const m = metadata;
-  return {
-    channel: asChannel(m.src_channel),
-    source: m.src_source ?? "(not recorded)",
-    medium: m.src_medium,
-    campaign: m.src_campaign,
-    term: m.src_term,
-    content: m.src_content,
-    landing: m.src_landing,
-    page: m.src_page,
-    first: m.src_first_channel
-      ? {
-          channel: asChannel(m.src_first_channel),
-          source: m.src_first_source ?? "",
-          landing: m.src_first_landing,
-          at: m.src_first_at,
-        }
-      : undefined,
-    city: m.src_city,
-    region: m.src_region,
-    country: m.src_country,
-    device: (["Mobile", "Tablet", "Desktop"] as const).find(
-      (device) => device === m.src_device,
-    ),
-  };
-}

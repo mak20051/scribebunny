@@ -14,14 +14,12 @@ import {
   Play,
   Rabbit,
   Rocket,
-  ShieldCheck,
   Sparkles,
   Star,
   Target,
   Users,
   Zap,
 } from "lucide-react";
-import { CheckoutButton } from "@/components/checkout-button";
 import { ConceptOffer } from "@/components/concept-offer";
 import { IconTile } from "@/components/icon-tile";
 import { HeroVideo } from "@/components/hero-video";
@@ -290,11 +288,9 @@ export default function HomePage() {
                 videos for SaaS brands, startups, and agencies.
               </p>
               <div className="mt-10 flex flex-col items-center gap-5 sm:flex-row sm:justify-center lg:justify-start">
-                <CheckoutButton
-                  packageId="single"
-                  label={`Order a Video for ${startingPrice}`}
-                  className="btn-primary text-lg"
-                />
+                <Link href="/free-concepts" className="btn-primary text-lg">
+                  Get 3 Free Concepts
+                </Link>
                 <a
                   href={CALENDLY_URL}
                   target="_blank"
@@ -311,23 +307,7 @@ export default function HomePage() {
                 See 5 and 10 video packages
                 <ArrowRight className="h-5 w-5" aria-hidden="true" />
               </a>
-              <p className="mt-2 text-lg text-gray-700">
-                {"Not ready yet? "}
-                <Link
-                  href="/free-concepts"
-                  className="font-bold text-[#FF3333] hover:underline"
-                >
-                  Get 3 free video concepts
-                </Link>
-              </p>
               <ul className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-3 text-base font-semibold text-gray-700 lg:justify-start">
-                <li className="flex items-center gap-2">
-                  <ShieldCheck
-                    className="h-5 w-5 text-[#FF3333]"
-                    aria-hidden="true"
-                  />
-                  Secure Stripe checkout
-                </li>
                 <li className="flex items-center gap-2">
                   <Clock
                     className="h-5 w-5 text-[#FF3333]"

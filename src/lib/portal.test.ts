@@ -23,8 +23,8 @@ beforeAll(() =>
 
 test("a payment settled by the webhook and the return page at once counts once", async () => {
   const results = await Promise.all([
-    markPortalPaid("SB-QUOTE001", { method: "stripe" }),
-    markPortalPaid("SB-QUOTE001", { method: "stripe" }),
+    markPortalPaid("SB-QUOTE001"),
+    markPortalPaid("SB-QUOTE001"),
   ]);
   expect(results.filter(Boolean)).toHaveLength(1);
   expect(vi.mocked(sendCustomerEmail)).toHaveBeenCalledOnce();

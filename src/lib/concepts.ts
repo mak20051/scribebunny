@@ -369,11 +369,8 @@ ${request.concepts.map(conceptHtml).join("")}
 </ul>
 <p>Love one of them? Reply with its number and we'll turn it into your video. A single video is ${formatUsd(single.priceCents)}, ${escapeHtml(single.turnaround.toLowerCase())}, with ${escapeHtml(VIDEO_SPEC.revisions)}.</p>`,
       preheader: "Three researched video concepts for your business.",
-      button: {
-        label: "Turn a concept into a video",
-        href: `${SITE_URL}/#pricing`,
-      },
-      afterButton: `Or book a free strategy call: ${CALENDLY_URL}`,
+      button: { label: "Book a free strategy call", href: CALENDLY_URL },
+      afterButton: "Or just reply with the number you like best.",
     }),
     text: [
       `Hi ${firstName(request.lead.name)},`,
@@ -384,7 +381,7 @@ ${request.concepts.map(conceptHtml).join("")}
         (concept, index) =>
           `${index + 1}. ${concept.title} (${concept.style})\nHook: ${concept.hook}\n${concept.story.map((beat) => `- ${beat}`).join("\n")}\nLook: ${concept.visuals}\nWhy it fits: ${concept.whyItFits}\n`,
       ),
-      `Love one? Reply with its number, or order at ${SITE_URL}/#pricing`,
+      `Love one? Reply with its number, or book a free call: ${CALENDLY_URL}`,
       "",
       "The Scribebunny studio",
     ].join("\n"),

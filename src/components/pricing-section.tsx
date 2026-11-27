@@ -1,6 +1,5 @@
-import { Check, Lock } from "lucide-react";
+import { Check, Receipt } from "lucide-react";
 import Link from "next/link";
-import { CheckoutButton } from "@/components/checkout-button";
 import {
   BULK_PACKAGE,
   EVERY_VIDEO_INCLUDES,
@@ -42,8 +41,8 @@ export function PricingSection() {
             {" Pricing"}
           </h2>
           <p className="mx-auto mt-4 max-w-3xl text-lg leading-relaxed text-gray-700 md:text-xl">
-            Pick a package, pay securely online, and we’ll start sketching your
-            story.
+            Start with 3 free concepts, pick a package, and we’ll start
+            sketching your story.
           </p>
         </div>
 
@@ -77,7 +76,12 @@ export function PricingSection() {
                     : "One-time payment"}
                 </p>
                 <FeatureList items={videoPackage.features} />
-                <CheckoutButton packageId={videoPackage.id} />
+                <Link
+                  href="/free-concepts"
+                  className="btn-primary w-full text-center"
+                >
+                  Free Concepts
+                </Link>
               </article>
             );
           })}
@@ -122,9 +126,9 @@ export function PricingSection() {
         </div>
 
         <p className="mt-10 flex items-center justify-center gap-2 text-center text-base text-gray-600">
-          <Lock className="h-5 w-5 shrink-0" aria-hidden="true" />
-          Secure checkout by Stripe. Invoices are issued by {PARENT_COMPANY},
-          the parent company of Scribebunny.
+          <Receipt className="h-5 w-5 shrink-0" aria-hidden="true" />
+          Invoices are issued by {PARENT_COMPANY}, the parent company of
+          Scribebunny.
         </p>
       </div>
     </section>

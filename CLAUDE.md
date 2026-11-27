@@ -54,10 +54,7 @@ are logged) and outside production (the CRM is skipped).
 - `src/lib/site.ts`: site URL, Calendly link, contact details, parent company
 - `src/lib/packages.ts`: video package prices and inclusions (the only place they live)
 - `src/components/pricing-section.tsx`: home page `#pricing` section
-- `src/lib/payments.ts`: Stripe Checkout, idempotent order fulfilment
 - `src/lib/email.ts`, `src/lib/email-layout.ts`: SMTP sending and the branded email layouts
-- `src/app/api/checkout/route.ts`: starts checkout; `src/app/api/stripe/webhook/route.ts`: fulfils paid orders
-- `src/app/order-confirmed/page.tsx`: order summary (fulfils the order when no webhook is set)
 - `src/lib/portal.ts`, `src/app/portal/`: client portal (messages, video status, delivery
   links, mark complete) with signed links; `src/lib/store.ts`: private Vercel Blob store
 - `src/app/api/leads/route.ts`: emails form leads, stores them (`src/lib/leads.ts`) and
@@ -83,15 +80,15 @@ Every paid order opens a portal. Links carry random keys, unique per person
 Every studio update emails the client: messages, each video status change, new
 video links, and the project being completed or reopened.
 
-Custom-price portals: "New client portal" on the dashboard (`/portal/new`, any
-team member) creates an order by hand (`manual`, own price and number of
-videos) with its own client link, and can email the client their link. Unless
-marked already paid, `payment.status` is "awaiting" and the client's portal shows
-a Pay button: a Stripe Checkout for that price (`createPortalCheckout`, metadata
-`portal`, invoiced by Infinisys LLC) that returns to `/portal/paid`, which settles
-it once (`markPortalPaid`; the webhook can too) and alerts the team. The studio
-can also "Mark as paid" for payments made another way. The growth board counts
-an order only once it is paid, by payment date.
+Orders: the site has no checkout (no Stripe, decided 2026-11-28). Package
+buttons lead to free concepts. Every order is a portal the team creates with
+"New client portal" on the dashboard (`/portal/new`, any team member): `manual`,
+its own price and number of videos, its own client link, and optionally an
+email to the client with that link. Unless marked already paid,
+`payment.status` is "awaiting": the team invoices from Infinisys LLC outside the
+site, and "Mark as paid" settles it once (`markPortalPaid`) and emails the
+client. Older orders paid by Stripe checkout keep their invoice and Stripe
+links. The growth board counts an order only once it is paid, by payment date.
 
 After delivery (`src/lib/launch.ts`, `src/components/launch-kit.tsx`): once a
 video is Complete the portal shows "Launch your video" (`#launch`): a six-step
@@ -127,7 +124,7 @@ button opens it as the studio, and its studio view shows its own random client
 link. It lives at `portal/demo/SB-DEMO.json`, never sends email, isn't in the
 orders list or the growth board, and has a "Reset demo" button.
 
-Private pages (`src/lib/private-paths.ts`: /portal, /concepts, /order-confirmed,
+Private pages (`src/lib/private-paths.ts`: /portal, /concepts, /stop-reminders,
 /api/) are blocked for every crawler group in robots.txt, sent with
 `X-Robots-Tag: noindex` and `Referrer-Policy: no-referrer` (next.config.ts), and
 never load the Facebook Pixel, because their addresses carry private keys.
@@ -144,8 +141,7 @@ writing", no draft alert goes out, and the team writes them by hand on the same
 page. The prospect's acknowledgement is a plain receipt either way.
 
 ## Lead sources
-Every form (contact, quote, agency, free concepts) and every package checkout
-records where the lead came from (`src/lib/lead-source.ts`). The browser
+Every form (contact, quote, agency, free concepts) records where the lead came from (`src/lib/lead-source.ts`). The browser
 (`src/components/lead-source-tracker.tsx`, in the root layout, public pages
 only) keeps the first visit and the latest visit with a source (utm tags, ad
 click IDs, referring site) in localStorage `sb_source` for 90 days and sends
@@ -154,7 +150,7 @@ Organic search, Organic social, AI assistant, Email, Referral, Other campaign,
 Direct) and adds city, region and country from Vercel's geo headers and the
 device; the IP is never stored. The source goes in the team alert, the CRM
 message, the lead record (`source` on leads, concept requests and portal
-orders), Stripe metadata (`src_*`, so paid orders keep it), the studio pages
+orders), the studio pages
 ("Where they came from") and the growth board. Tag outreach links with
 `utm_source`, `utm_medium` and `utm_campaign` so they show up by name. The
 CRM only receives leads from production (`VERCEL_ENV`), never from local runs
@@ -166,18 +162,16 @@ Growth board button on the owner's dashboard). It shows live numbers from the si
 `portal/leads/<id>.json` plus concept requests), concepts sent, paid orders,
 revenue (`amountCents` on each order), conversion rates, revenue by package,
 enquiries, orders and revenue by channel, enquiries by country, the last 8
-weeks and recent activity. An order's channel is its checkout's source, else
-the first enquiry with the same email (quotes). Only leads sent after this shipped are counted.
+weeks and recent activity. An order's channel is its own source (old
+checkouts), else the first enquiry with the same email. Only leads sent after this shipped are counted.
 
 ## Business details
 Scribebunny is a small animation studio that loves to draw and tell stories;
 write copy in that voice. Scribebunny is a brand of Infinisys LLC. All invoices are issued by Infinisys
-LLC, so the Stripe account behind `STRIPE_SECRET_KEY` must be Infinisys LLC's.
+LLC.
 
 ## Environment
-Vercel env vars: `STRIPE_SECRET_KEY`, optional `STRIPE_WEBHOOK_SECRET`
-(endpoint `/api/stripe/webhook`, event `checkout.session.completed`), plus
-SMTP settings: `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`,
+Vercel env vars: SMTP settings: `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`,
 `SMTP_PASS`, `LEAD_FROM_EMAIL`. Lead and order alerts go to `TEAM_EMAILS` in
 `src/lib/site.ts`. Locally, without SMTP, emails are logged and written to
 `EMAIL_PREVIEW_DIR` if set. Never commit `.env*` files.

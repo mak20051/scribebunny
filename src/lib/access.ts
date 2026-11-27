@@ -20,7 +20,7 @@ import { readJson, updateJson, writeJson } from "@/lib/store";
  *
  * Replacing a key (Team access page) kills that person's old links and nobody
  * else's. Taking an email out of TEAM_EMAILS revokes it. Keys are random, so
- * nothing depends on the Stripe key or any other secret.
+ * nothing depends on any other secret.
  */
 
 type TeamFile = {

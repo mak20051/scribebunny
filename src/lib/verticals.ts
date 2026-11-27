@@ -439,7 +439,7 @@ export const verticals: Vertical[] = [
       {
         question: "How does pricing work for agencies?",
         answer:
-          "Agencies can buy our 1, 5, or 10 video packages online, or talk to us about volume pricing for more than 10 videos. Every order gets its own private project portal, so each of your clients' videos stays organized.",
+          "Agencies can order our 1, 5, or 10 video packages, or talk to us about volume pricing for more than 10 videos. Every order gets its own private project portal, so each of your clients' videos stays organized.",
       },
       serviceCostFaq("white-label explainer video"),
     ],
